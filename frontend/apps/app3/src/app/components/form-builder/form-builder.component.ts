@@ -13,7 +13,7 @@ import { Formular, FormularStatus } from '../../models/form.models';
       <header class="header">
         <h1>Formular Builder</h1>
         <button routerLink="neu" class="btn btn-primary">
-          ➕ Neues Formular erstellen
+          Neues Formular erstellen
         </button>
       </header>
 
@@ -40,12 +40,12 @@ import { Formular, FormularStatus } from '../../models/form.models';
             <button
               [routerLink]="['bearbeiten', formular.id]"
               class="btn btn-secondary">
-              ✏️ Bearbeiten
+               Bearbeiten
             </button>
             <button
               (click)="loescheFormular(formular.id!)"
               class="btn btn-danger">
-              🗑️ Löschen
+               Löschen
             </button>
           </div>
         </div>
