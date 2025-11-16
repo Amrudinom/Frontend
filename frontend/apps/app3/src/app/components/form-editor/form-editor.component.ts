@@ -94,16 +94,16 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } fr
             </div>
 
             <button type="button" (click)="neuesFeld()" class="btn btn-secondary">
-              ➕ Neues Feld hinzufügen
+              Neues Feld hinzufügen
             </button>
           </div>
 
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" [disabled]="!formularForm.valid">
-              💾 Formular speichern
+              Formular speichern
             </button>
             <button type="button" routerLink="/form-builder" class="btn btn-secondary">
-              ❌ Abbrechen
+              Abbrechen
             </button>
           </div>
         </form>
