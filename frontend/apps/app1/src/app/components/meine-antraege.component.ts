@@ -214,7 +214,6 @@ export class MeineAntraegeComponent implements OnInit {
     this.loading = true;
     this.error = null;
 
-    // Token holen und Request mit Token machen
     this.auth.getAccessTokenSilently({
       authorizationParams: {
         audience: 'https://foerderportal-api',
@@ -236,14 +235,14 @@ export class MeineAntraegeComponent implements OnInit {
           error: (err) => {
             this.error = 'Fehler beim Laden der Anträge: ' + err.message;
             this.loading = false;
-            console.error('❌ Error loading antraege:', err);
+            console.error('Error loading antraege:', err);
           }
         });
       },
       error: (err) => {
         this.error = 'Fehler beim Token holen: ' + err.message;
         this.loading = false;
-        console.error('❌ Token-Fehler:', err);
+        console.error('Token-Fehler:', err);
       }
     });
   }

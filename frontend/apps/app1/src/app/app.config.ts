@@ -15,11 +15,11 @@ export const appConfig: ApplicationConfig = {
 
     ),
     provideAuth0({
-      domain: 'dev-scatpu2erri1lnpo.us.auth0.com',  // z.B. dev-abc123.eu.auth0.com
+      domain: 'dev-scatpu2erri1lnpo.us.auth0.com',
       clientId: 'NejhD4OjQYLEfw5ACRsacshd2l1lA9uV',
       authorizationParams: {
         redirect_uri: window.location.origin,
-        audience: 'https://foerderportal-api',  // Wie in Auth0 API definiert!
+        audience: 'https://foerderportal-api',
         scope: 'openid profile email'
       },
       httpInterceptor: {

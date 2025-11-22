@@ -113,7 +113,6 @@ export class AppComponent implements OnInit{
 
       console.log("User ist eingeloggt!");
 
-      // Token explizit abrufen
       this.auth.getAccessTokenSilently({
         authorizationParams: {
           audience: 'https://foerderportal-api',
@@ -122,7 +121,7 @@ export class AppComponent implements OnInit{
       }).subscribe({
         next: (token) => {
           console.log("Token erhalten:", token );
-          console.log("Token (erste 50 Zeichen):", token?.substring(0, 50));
+          console.log("Token:", token?.substring(0, 50));
 
           // Manuell mit Token
           this.http.get('/api/users/me', {
@@ -138,22 +137,6 @@ export class AppComponent implements OnInit{
           console.error(" Token-Fehler:", err);
         }
       });
-    });
-  }
-  login() {
-    this.auth.loginWithRedirect({
-      authorizationParams: {
-        audience: 'https://foerderportal-api',
-        scope: 'openid profile email read:users'
-      }
-    });
-  }
-
-  logout() {
-    this.auth.logout({
-      logoutParams: {
-        returnTo: window.location.origin,
-      },
     });
   }
 }
