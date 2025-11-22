@@ -111,7 +111,7 @@ export class AppComponent implements OnInit{
     this.auth.isAuthenticated$.subscribe(isAuth => {
       if (!isAuth) return;
 
-      console.log("🔐 User ist eingeloggt!");
+      console.log("User ist eingeloggt!");
 
       // Token explizit abrufen
       this.auth.getAccessTokenSilently({
@@ -121,8 +121,8 @@ export class AppComponent implements OnInit{
         }
       }).subscribe({
         next: (token) => {
-          console.log("🎫 Token erhalten:", token ? "✅ JA" : "❌ NEIN");
-          console.log("🎫 Token (erste 50 Zeichen):", token?.substring(0, 50));
+          console.log("Token erhalten:", token );
+          console.log("Token (erste 50 Zeichen):", token?.substring(0, 50));
 
           // Manuell mit Token
           this.http.get('/api/users/me', {
@@ -130,12 +130,12 @@ export class AppComponent implements OnInit{
               'Authorization': `Bearer ${token}`
             }
           }).subscribe({
-            next: (res) => console.log("✅ Backend Response:", res),
-            error: (err) => console.error("❌ API Fehler:", err)
+            next: (res) => console.log("Backend Response:", res),
+            error: (err) => console.error("API Fehler:", err)
           });
         },
         error: (err) => {
-          console.error("❌ Token-Fehler:", err);
+          console.error(" Token-Fehler:", err);
         }
       });
     });
