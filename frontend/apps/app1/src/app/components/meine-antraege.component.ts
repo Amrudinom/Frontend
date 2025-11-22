@@ -1,6 +1,10 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService, Foerderantrag, AntragStatus } from '@frontend/core';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
+import { AuthService } from '@auth0/auth0-angular';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-meine-antraege',
@@ -185,30 +189,61 @@ import { ApiService, Foerderantrag, AntragStatus } from '@frontend/core';
   `]
 })
 export class MeineAntraegeComponent implements OnInit {
-  private apiService = inject(ApiService);
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  private auth = inject(AuthService);
 
   antraege: Foerderantrag[] = [];
   loading = false;
   error: string | null = null;
 
   ngOnInit() {
+    console.log('MeineAntragComponent geladen');
     this.loadAntraege();
+
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe(() => {
+        if(this.router.url == '/antraege'){
+          this.loadAntraege()
+        }
+      })
   }
 
   loadAntraege() {
     this.loading = true;
     this.error = null;
 
-    this.apiService.getMyAntraege().subscribe({
-      next: (data) => {
-        this.antraege = data;
-        this.loading = false;
-        console.log('Loaded antraege:', data);
+    // Token holen und Request mit Token machen
+    this.auth.getAccessTokenSilently({
+      authorizationParams: {
+        audience: 'https://foerderportal-api',
+        scope: 'openid profile email'
+      }
+    }).subscribe({
+      next: (token) => {
+        // Request mit Token
+        this.http.get<Foerderantrag[]>('/api/foerderantraege/my', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }).subscribe({
+          next: (data) => {
+            this.antraege = data;
+            this.loading = false;
+            console.log('✅ Loaded antraege:', data);
+          },
+          error: (err) => {
+            this.error = 'Fehler beim Laden der Anträge: ' + err.message;
+            this.loading = false;
+            console.error('❌ Error loading antraege:', err);
+          }
+        });
       },
       error: (err) => {
-        this.error = 'Fehler beim Laden der Anträge: ' + err.message;
+        this.error = 'Fehler beim Token holen: ' + err.message;
         this.loading = false;
-        console.error('Error loading antraege:', err);
+        console.error('❌ Token-Fehler:', err);
       }
     });
   }

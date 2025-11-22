@@ -1,36 +1,44 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import {
+  ApplicationConfig,
+  provideZoneChangeDetection,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import {provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAuth0 } from '@auth0/auth0-angular';
-import { authInterceptor } from '@frontend/core';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(
-      withInterceptors([authInterceptor])
+    provideHttpClient(withInterceptors([])
+
     ),
     provideAuth0({
-      domain: 'dev-s57nbleczfjtroo4.us.auth0.com',  // z.B. dev-abc123.eu.auth0.com
-      clientId: 'hgzwcL5jLOGy2De6a06vNUWPryQCGho9',
+      domain: 'dev-scatpu2erri1lnpo.us.auth0.com',  // z.B. dev-abc123.eu.auth0.com
+      clientId: 'NejhD4OjQYLEfw5ACRsacshd2l1lA9uV',
       authorizationParams: {
         redirect_uri: window.location.origin,
-        audience: 'https://foerderportal-api'  // Wie in Auth0 API definiert!
+        audience: 'https://foerderportal-api',  // Wie in Auth0 API definiert!
+        scope: 'openid profile email'
       },
       httpInterceptor: {
         allowedList: [
+          '/api/*',
+          'http://localhost:8080/api/*',
           {
             uri: 'http://localhost:8080/api/*',
             tokenOptions: {
               authorizationParams: {
-                audience: 'https://foerderportal-api'
+                audience: 'https://foerderportal-api',
+                scope: 'openid profile email'
               }
             }
           }
         ]
-      }
+      },
+      cacheLocation: "localstorage",
+      useRefreshTokens: true
     })
   ],
 };
