@@ -1,0 +1,15 @@
+  <div class="sidebar-toggle" (click)="toggleSidebar()">
+    <span>{{ isOpen ? '⬅' : '➡' }}</span>
+  </div>
+
+  <div class="sidebar-container" [class.open]="isOpen">
+  <div class="sidebar-content">
+    <nav class="sidebar">
+    <ul>
+      <li><a routerLink="/antraege" routerLinkActive="active"> Meine Anträge</a></li>
+      <li><a routerLink="/form-builder" routerLinkActive="active"> Formulare erstellen </a></li>
+      <li><a routerLink="/formulare" routerLinkActive="active"> Formulare ansehen </a></li>
+    </ul>
+    </nav>
+  </div>
+</div>
