@@ -36,5 +36,11 @@ export const routes: Routes = [
   {
     path:'formulare',
     component: FormulareListComponent
+  },
+  {
+    path: 'erhaltene-antraege',
+    loadComponent: () =>
+      import('./components/application-list/application-list.component').then(m=>m.ApplicationListComponent),
+    canActivate: [AuthGuard]
   }
 ];
