@@ -5,7 +5,6 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 
 
-/*I Inhalt von der Klasse Formular*/
 export interface Formular {
   id: number;
   titel: string;

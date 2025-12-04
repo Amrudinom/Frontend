@@ -1,0 +1,24 @@
+<div class="container">
+  <h1>Verfügbare Formulare</h1>
+
+  @if (error){
+    <div class="error">{{ error }}</div>
+  }
+
+  @if(!loading){
+    @for(formular of formulare; track formular.id){
+      <div class="formular-card">
+        <div class="card-header">
+          <h3>{{ formular.titel }}</h3>
+        </div>
+        <div class="beschreibung">{{ formular.beschreibung }}</div>
+
+        <div>
+          <span class="kategorie">{{ formular.kategorie }}</span>
+        </div>
+      </div>
+    }
+  }
+
+</div>
+

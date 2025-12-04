@@ -101,6 +101,7 @@ import { HttpClient} from "@angular/common/http";
     `,
   ],
 })
+/* ngOnInit nur zu Debug Zwecken*/
 export class AppComponent implements OnInit{
   auth = inject(AuthService);
   private http = inject(HttpClient);
@@ -123,7 +124,6 @@ export class AppComponent implements OnInit{
           console.log("Token erhalten:", token );
           console.log("Token:", token?.substring(0, 50));
 
-          // Manuell mit Token
           this.http.get('/api/users/me', {
             headers: {
               'Authorization': `Bearer ${token}`

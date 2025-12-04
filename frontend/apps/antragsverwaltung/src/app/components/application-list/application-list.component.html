@@ -1,0 +1,33 @@
+<div class="container">
+  <h1>Erhaltene Förderanträge</h1>
+
+  <div *ngIf="loading" class="loading">Lade Anträge...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <div *ngIf="!loading && antraege.length > 0" class="antraege-list">
+    <div *ngFor="let antrag of antraege" class="antrag-card">
+      <h3>{{ antrag.titel }}</h3>
+      <p class="beschreibung">{{ antrag.beschreibung }}</p>
+
+      <div class="details">
+        <p><strong>Betrag:</strong> {{ antrag.betrag | currency:'EUR' }}</p>
+        <p>
+          <strong>Status:</strong>
+          <span [class]="'status-badge status-' + antrag.status.toLowerCase()">
+            {{ getStatusText(antrag.status) }}
+          </span>
+        </p>
+        <p><strong>Eingereicht:</strong> {{ antrag.eingereichtAm | date:'dd.MM.yyyy' }}</p>
+      </div>
+
+      <div *ngIf="antrag.status === 'ABGELEHNT' && antrag.ablehnungsgrund" class="ablehnungsgrund">
+        <strong>Ablehnungsgrund:</strong>
+        <p>{{ antrag.ablehnungsgrund }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && antraege.length === 0" class="no-data">
+    <p>📋 Keine Anträge vorhanden</p>
+  </div>
+</div>
