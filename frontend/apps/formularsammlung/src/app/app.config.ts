@@ -6,7 +6,7 @@ import {
 import { provideRouter } from '@angular/router';
 import { appRoutes } from './app.routes';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideAuth0 } from '@auth0/auth0-angular';
+import { authHttpInterceptorFn, provideAuth0 } from '@auth0/auth0-angular';
 import { getAuth0Config } from '@frontend/shared-ui'
 
 export const appConfig: ApplicationConfig = {
@@ -14,7 +14,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
-    provideHttpClient(withInterceptors([])),
+    provideHttpClient(withInterceptors([authHttpInterceptorFn])),
     provideAuth0(getAuth0Config())
   ],
 };

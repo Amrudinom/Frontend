@@ -1,0 +1,29 @@
+<div class="container">
+  @if (error) {
+    <div>{{ error }}</div>
+  }
+
+  @if (formular && formularForm) {
+    <h1>{{ formular.titel }}</h1>
+    <h4>{{ formular.beschreibung }}</h4>
+
+    <form [formGroup]="formularForm">
+
+      @for (feld of formular.felder; track feld.id) {
+        <div class="form-group">
+          <label>
+            {{ feld.beschriftung }}
+          </label>
+
+          <input
+            [type]="feld.feldTyp === 'EMAIL' ? 'email' : 'text'"
+            [formControlName]="feld.feldName"
+            class="form-control"
+          />
+        </div>
+      }
+    </form>
+  }
+  <button (click)="goBack()">Zurück</button>
+  <button>Antrag erstellen</button>
+</div>

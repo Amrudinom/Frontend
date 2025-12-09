@@ -26,6 +26,7 @@ export interface Formular {
 export class FormulareListComponent implements OnInit {
   private http = inject(HttpClient);
   private auth = inject(AuthService);
+  private router = inject(Router);
 
   formulare: Formular[] = [];
   loading = false;
@@ -41,37 +42,21 @@ export class FormulareListComponent implements OnInit {
     this.loading = true;
     this.error = null;
 
-    this.auth.getAccessTokenSilently({
-      authorizationParams: {
-        audience: 'https://foerderportal-api',
-        scope: 'openid profile email'
-      }
-    }).subscribe({
-      next: (token) => {
-        this.http.get<Formular[]>('/api/formulare', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }).subscribe({
-          next: (data) => {
-            this.formulare = data;
-            this.loading = false;
-            console.log('Loaded formulare:', data);
-          },
-          error: (err) => {
-            this.error = 'Fehler beim Laden der Formulare: ' + err.message;
-            this.loading = false;
-            console.error(' Error loading formulare:', err);
-          }
-        });
+    this.http.get<Formular[]>('/api/formulare').subscribe({
+      next: (data) => {
+        this.formulare = data;
+        this.loading = false;
+        console.log('Loaded formulare:', data);
       },
       error: (err) => {
-        this.error = 'Fehler beim Token holen: ' + err.message;
+        this.error = 'Fehler beim Laden der Formulare: ' + err.message;
         this.loading = false;
-        console.error(' Token-Fehler:', err);
+        console.error(' Error loading formulare:', err);
       }
     });
   }
-
+  openFormular(id: number){
+    this.router.navigate(['/formulare', id])
+  }
 
 }

@@ -1,15 +1,9 @@
-/* container */
 .container{
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
-.h1{
-  color: #333;
-  margin-bottom: 2rem;
-  font-size: 2rem;
-}
 .formulare{
   display: grid;
   grid-template-columns: repeat(auto-fill,minmax(350px,1fr));
@@ -17,23 +11,38 @@
   margin-bottom: 2rem;
 }
 .formular-card{
-  border: 1px;
+  border: 1px solid;
   border-radius: 8px;
   padding: 1.5rem;
   background: white;
+  margin-bottom: 2rem;
 }
 
-.card-header h3{
+.card-header h2{
+  font-size: 40px;
   border: 1px;
   border-radius: 8px;
   padding: 1.5rem;
-  background: white;
+  background: gray;
   box-shadow: 0 2px 4px #17172f;
+  margin-bottom: 3rem;
+}
+
+
+.button{
+  margin-top: 2rem;
+  font-size: 1.5rem;
+}
+
+.kategorie{
+  font-size: 25px;
+  margin-bottom: 3rem;
 }
 
 .beschreibung{
-  color: #333;
-  line-height: 1.6;
-  margin-bottom: 1rem;
+  font-size: 35px;
+  margin-bottom: 3rem;
 }
+
+
 
