@@ -147,7 +147,7 @@ import {FormularStatus, Formular} from '../models/form.models';
 export class FormBuilderComponent implements OnInit {
   formulare: Formular[] = [];
   FormularStatus = FormularStatus;
-
+  isLoading = false;
   constructor(private formService: FormService) {}
 
   ngOnInit(): void {
@@ -165,7 +165,21 @@ export class FormBuilderComponent implements OnInit {
   }
 
   ladeFormulare(): void {
+
+    this.isLoading = true;
+    this.formService.getFormulare().subscribe({
+      next: (formulare) => {
+        this.formulare = formulare;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Fehler beim Laden der Formulare:', error);
+        alert('Fehler beim Laden der Formulare');
+        this.isLoading = false;
+      }
+    });
     // Mock-Daten mit korrekten Enum-Werten
+    /*
     this.formulare = [
       {
         id: 1,
@@ -184,11 +198,37 @@ export class FormBuilderComponent implements OnInit {
         felder: []
       }
     ];
+
+     */
   }
 
+  veroeffentliche(id: number): void {
+    this.formService.veroeffentlicheFormular(id).subscribe({
+      next: () => {
+        this.ladeFormulare();
+      },
+      error: (error) => {
+        console.error('Fehler beim Veröffentlichen:', error);
+        alert('Fehler beim Veröffentlichen des Formulars');
+      }
+    });
+  }
+
+  zurueckziehen(id: number): void {
+    // Hier muss noch eine Methode rein im FormService erstellen
+    alert('Zurückziehen-Funktion noch nicht implementiert');
+  }
   loescheFormular(id: number): void {
     if (confirm('Formular wirklich löschen?')) {
-      this.formulare = this.formulare.filter(f => f.id !== id);
+      this.formService.deleteFormular(id).subscribe({
+        next: () => {
+          this.ladeFormulare();
+        },
+        error: (error) => {
+          console.error('Fehler beim Löschen:', error);
+          alert('Fehler beim Löschen des Formulars');
+        }
+      });
     }
   }
 }

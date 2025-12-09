@@ -30,6 +30,9 @@ export class FormService {
   veroeffentlicheFormular(id: number): Observable<Formular> {
     return this.http.post<Formular>(`${this.apiUrl}/${id}/veroeffentlichen`, {});
   }
+  zurueckziehenFormular(id: number): Observable<Formular> {
+    return this.http.post<Formular>(`${this.apiUrl}/${id}/zurueckziehen`, {});
+  }
 
   deleteFormular(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
