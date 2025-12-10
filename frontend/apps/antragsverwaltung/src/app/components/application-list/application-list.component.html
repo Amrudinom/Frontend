@@ -1,6 +1,35 @@
 <div class="container">
   <h1>Erhaltene Förderanträge</h1>
 
+  <div class="filter container">
+    <label>
+      Status:
+      <select [(ngModel)]="filter.status">
+        <option value="">Alle</option>
+        <option *ngFor="let s of statusOptions" [value]="s">{{s}}</option>
+      </select>
+    </label>
+    <label>
+      Antragsteller:
+      <select [(ngModel)]="filter.userId">
+        <option value="">Alle</option>
+        <option *ngFor="let u of users" [value]="u.id">{{ u.name }}</option>
+      </select>
+    </label>
+    <label>
+      Von:
+      <input type = date [(ngModel)]="filter.from">
+    </label>
+    <label>
+      Bis:
+      <input type = "date" [(ngModel)]="filter.to">
+    </label>
+    <button (click)="applyFilter()">Filtern</button>
+    <button (click)="resetFilter()">Zurücksetzten</button>
+
+  </div>
+
+
   <div *ngIf="loading" class="loading">Lade Anträge...</div>
   <div *ngIf="error" class="error">{{ error }}</div>
 
