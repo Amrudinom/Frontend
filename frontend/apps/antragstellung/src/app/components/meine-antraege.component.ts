@@ -47,16 +47,20 @@ import { HttpClient } from '@angular/common/http';
             <strong>Ablehnungsgrund:</strong>
             <p>{{ antrag.ablehnungsgrund }}</p>
           </div>
+
+          <button (click)="openAntrag(antrag.id)" class="details-btn">
+            Details ansehen
+          </button>
         </div>
 
         <div *ngIf="antraege.length === 0" class="no-data">
-          <p>📋 Keine Anträge vorhanden</p>
-          <p>Erstellen Sie Ihren ersten Förderantrag!</p>
+          <p>Keine Anträge vorhanden</p>
+          <p>Erstellen Sie Ihren ersten Förderantrag</p>
         </div>
       </div>
 
       <button (click)="loadAntraege()" class="reload-btn">
-        🔄 Aktualisieren
+        Aktualisieren
       </button>
     </div>
   `,
@@ -184,6 +188,24 @@ import { HttpClient } from '@angular/common/http';
         margin-bottom: 1rem;
       }
 
+      .details-btn {
+        margin-top: 1rem;
+        padding: 0.75rem 1.5rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: background 0.3s;
+        width: 100%;
+      }
+
+      .details-btn:hover {
+        background: #0056b3;
+      }
+
       .reload-btn {
         padding: 0.75rem 2rem;
         background: #007bff;
@@ -237,7 +259,6 @@ export class MeineAntraegeComponent implements OnInit {
       })
       .subscribe({
         next: (token) => {
-
           this.http
             .get<Foerderantrag[]>('/api/foerderantraege/my', {
               headers: {
@@ -248,7 +269,7 @@ export class MeineAntraegeComponent implements OnInit {
               next: (data) => {
                 this.antraege = data;
                 this.loading = false;
-                console.log(' Loaded antraege:', data);
+                console.log('Loaded antraege:', data);
               },
               error: (err) => {
                 this.error = 'Fehler beim Laden der Anträge: ' + err.message;
@@ -263,6 +284,10 @@ export class MeineAntraegeComponent implements OnInit {
           console.error('Token-Fehler:', err);
         },
       });
+  }
+
+  openAntrag(id: number) {
+    this.router.navigate(['/antraege', id]);
   }
 
   getStatusText(status: AntragStatus): string {
