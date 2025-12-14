@@ -31,7 +31,10 @@ import {FormularStatus, Formular} from '../models/form.models';
           <div class="formular-info">
             <h3>{{ formular.titel }}</h3>
             <p>{{ formular.beschreibung }}</p>
-            <span class="status" [class.published]="formular.status === FormularStatus.PUBLISHED">
+            <span class="status"
+                  [class.draft]="formular.status === 'DRAFT'"
+                  [class.published]="formular.status === 'PUBLISHED'"
+                  [class.archived]="formular.status === 'ARCHIVED'">
               {{ getStatusText(formular.status) }}
             </span>
           </div>
@@ -42,6 +45,7 @@ import {FormularStatus, Formular} from '../models/form.models';
               class="btn btn-secondary">
                Bearbeiten
             </button>
+
             <button
               (click)="loescheFormular(formular.id!)"
               class="btn btn-danger">
@@ -128,10 +132,6 @@ import {FormularStatus, Formular} from '../models/form.models';
       color: white;
     }
 
-    .status.published {
-      background: #27ae60;
-    }
-
     .keine-formulare {
       text-align: center;
       padding: 3rem;
@@ -141,6 +141,18 @@ import {FormularStatus, Formular} from '../models/form.models';
     .formular-actions {
       display: flex;
       gap: 0.5rem;
+    }
+
+    .status.draft {
+      background: #f39c12; // Orange für Entwurf
+    }
+
+    .status.published {
+      background: #27ae60; // Grün für veröffentlicht
+    }
+
+    .status.archived {
+      background: #3498db; // Blau für archiviert
     }
   `]
 })
@@ -178,45 +190,7 @@ export class FormBuilderComponent implements OnInit {
         this.isLoading = false;
       }
     });
-    // Mock-Daten mit korrekten Enum-Werten
-    /*
-    this.formulare = [
-      {
-        id: 1,
-        titel: 'Beispiel Formular 1',
-        beschreibung: 'Dies ist ein Beispielformular',
-        kategorie: 'Allgemein',
-        status: FormularStatus.DRAFT,
-        felder: []
-      },
-      {
-        id: 2,
-        titel: 'Beispiel Formular 2',
-        beschreibung: 'Ein weiteres Beispiel',
-        kategorie: 'Anträge',
-        status: FormularStatus.PUBLISHED,
-        felder: []
-      }
-    ];
 
-     */
-  }
-
-  veroeffentliche(id: number): void {
-    this.formService.veroeffentlicheFormular(id).subscribe({
-      next: () => {
-        this.ladeFormulare();
-      },
-      error: (error) => {
-        console.error('Fehler beim Veröffentlichen:', error);
-        alert('Fehler beim Veröffentlichen des Formulars');
-      }
-    });
-  }
-
-  zurueckziehen(id: number): void {
-    // Hier muss noch eine Methode rein im FormService erstellen
-    alert('Zurückziehen-Funktion noch nicht implementiert');
   }
   loescheFormular(id: number): void {
     if (confirm('Formular wirklich löschen?')) {

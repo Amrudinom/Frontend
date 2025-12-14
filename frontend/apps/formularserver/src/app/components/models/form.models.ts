@@ -12,18 +12,18 @@ export interface Formular {
 export interface FormularFeld {
   id?: number;
   feldName: string;
-  feldTyp: FeldTyp;
+  feldTyp: string;
   label: string;
-  placeholder: string;
-  defaultValue: string;
+  placeholder?: string;
+  defaultValue?: string;
   pflichtfeld: boolean;
-  oauthAutoFill: boolean;
-  oauthFieldMapping: string;
+  oauthAutoFill?: boolean;
+  oauthFieldMapping?: string;
   minLength?: number;
   maxLength?: number;
-  regexPattern: string;
-  reihenfolge: number;
-  optionen?: string[];
+  regexPattern?: string;
+  anzeigeReihenfolge: number;
+  optionen?: any[];
   checkboxLabelTrue?: string;
   checkboxLabelFalse?: string;
   fileTypes?: string;

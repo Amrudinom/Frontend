@@ -7,7 +7,7 @@ import { Formular } from '../models/form.models';
   providedIn: 'root'
 })
 export class FormService {
-  private apiUrl = 'http://localhost:8080/api/formulare';
+  private apiUrl = 'http://localhost:8083/api/formulare-verwaltung';
 
   constructor(private http: HttpClient) {}
 
@@ -30,8 +30,8 @@ export class FormService {
   veroeffentlicheFormular(id: number): Observable<Formular> {
     return this.http.post<Formular>(`${this.apiUrl}/${id}/veroeffentlichen`, {});
   }
-  zurueckziehenFormular(id: number): Observable<Formular> {
-    return this.http.post<Formular>(`${this.apiUrl}/${id}/zurueckziehen`, {});
+  archivierenFormular(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/archivieren`, {});
   }
 
   deleteFormular(id: number): Observable<void> {

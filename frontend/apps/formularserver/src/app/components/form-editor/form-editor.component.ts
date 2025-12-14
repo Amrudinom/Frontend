@@ -86,8 +86,8 @@ export class FormEditorComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Automatische Speicherung alle 10 Sekunden
-    this.autoSaveSubscription = interval(10000).subscribe(() => {
+    // Automatische Speicherung alle 30 Sekunden
+    this.autoSaveSubscription = interval(30000).subscribe(() => {
       this.saveToLocalStorage();
     });
 
@@ -202,12 +202,12 @@ export class FormEditorComponent implements OnInit, OnDestroy {
       const currentField = fields.at(index);
       const previousField = fields.at(index - 1);
 
-      // Wert von Reihenfolge tauschen
-      const currentReihenfolge = currentField.get('reihenfolge')?.value;
-      const previousReihenfolge = previousField.get('reihenfolge')?.value;
+      // Wert von anzeigeReihenfolge tauschen
+      const currentReihenfolge = currentField.get('anzeigeReihenfolge')?.value;
+      const previousReihenfolge = previousField.get('anzeigeReihenfolge')?.value;
 
-      currentField.get('reihenfolge')?.setValue(previousReihenfolge);
-      previousField.get('reihenfolge')?.setValue(currentReihenfolge);
+      currentField.get('anzeigeReihenfolge')?.setValue(previousReihenfolge);
+      previousField.get('anzeigeReihenfolge')?.setValue(currentReihenfolge);
 
       // Controls tauschen
       fields.setControl(index - 1, currentField);
@@ -226,12 +226,12 @@ export class FormEditorComponent implements OnInit, OnDestroy {
       const currentField = fields.at(index);
       const nextField = fields.at(index + 1);
 
-      // Wert von Reihenfolge tauschen
-      const currentReihenfolge = currentField.get('reihenfolge')?.value;
-      const nextReihenfolge = nextField.get('reihenfolge')?.value;
+      // Wert von anzeigeReihenfolge tauschen
+      const currentReihenfolge = currentField.get('anzeigeReihenfolge')?.value;
+      const nextReihenfolge = nextField.get('anzeigeReihenfolge')?.value;
 
-      currentField.get('reihenfolge')?.setValue(nextReihenfolge);
-      nextField.get('reihenfolge')?.setValue(currentReihenfolge);
+      currentField.get('anzeigeReihenfolge')?.setValue(nextReihenfolge);
+      nextField.get('anzeigeReihenfolge')?.setValue(currentReihenfolge);
 
       // Controls tauschen
       fields.setControl(index + 1, currentField);
@@ -246,6 +246,7 @@ export class FormEditorComponent implements OnInit, OnDestroy {
 
   neuesFeld(): void {
     const feldGroup = this.fb.group({
+      id: [null], // Keine ID für neue Felder
       feldTyp: ['TEXT', Validators.required],
       feldName: ['', [Validators.required, Validators.pattern('^[a-zA-Z_][a-zA-Z0-9_]*$')]],
       label: ['', Validators.required],
@@ -257,28 +258,26 @@ export class FormEditorComponent implements OnInit, OnDestroy {
       minLength: [null],
       maxLength: [null],
       regexPattern: [''],
-      reihenfolge: [this.felder.length],
-      // Neue Felder für erweiterte Konfiguration
-      optionen: this.fb.array(['Option 1', 'Option 2']), // Für SELECT
-      checkboxLabelTrue: ['Ja'], // Für CHECKBOX
-      checkboxLabelFalse: ['Nein'], // Für CHECKBOX
-      fileTypes: ['.pdf,.jpg,.png'], // Für FILE_UPLOAD
-      maxFileSize: [10], // Für FILE_UPLOAD
-      minValue: [null], // Für NUMBER
-      maxValue: [null] // Für NUMBER
+      anzeigeReihenfolge: [this.felder.length],
+      optionen: this.fb.array(['Option 1', 'Option 2']),
+      checkboxLabelTrue: ['Ja'],
+      checkboxLabelFalse: ['Nein'],
+      fileTypes: ['.pdf,.jpg,.png'],
+      maxFileSize: [10],
+      minValue: [null],
+      maxValue: [null]
     });
-
     this.felder.push(feldGroup);
   }
 
   neuesFeldMitTyp(feldTyp: FeldTyp, label?: string): void {
     const feldName = this.generateFieldName(label || feldTyp.toLowerCase());
 
-    // OAuth Auto-Fill basierend auf Feldtyp setzen
     const oauthAutoFill = feldTyp === FeldTyp.EMAIL || feldTyp === FeldTyp.TEXT;
     const oauthFieldMapping = feldTyp === FeldTyp.EMAIL ? 'email' : '';
 
     const feldGroup = this.fb.group({
+      id: [null], // Keine ID für neue Felder
       feldTyp: [feldTyp, Validators.required],
       feldName: [feldName, [Validators.required, Validators.pattern('^[a-zA-Z_][a-zA-Z0-9_]*$')]],
       label: [label || this.getDefaultLabel(feldTyp), Validators.required],
@@ -290,15 +289,14 @@ export class FormEditorComponent implements OnInit, OnDestroy {
       minLength: [null],
       maxLength: [null],
       regexPattern: [''],
-      reihenfolge: [this.felder.length],
-      // Neue Felder für erweiterte Konfiguration
-      optionen: this.fb.array(feldTyp === FeldTyp.SELECT ? ['Option 1', 'Option 2'] : []), // Für SELECT
-      checkboxLabelTrue: [feldTyp === FeldTyp.CHECKBOX ? 'Ja' : ''], // Für CHECKBOX
-      checkboxLabelFalse: [feldTyp === FeldTyp.CHECKBOX ? 'Nein' : ''], // Für CHECKBOX
-      fileTypes: [feldTyp === FeldTyp.FILE_UPLOAD ? '.pdf,.jpg,.png' : ''], // Für FILE_UPLOAD
-      maxFileSize: [feldTyp === FeldTyp.FILE_UPLOAD ? 10 : null], // Für FILE_UPLOAD
-      minValue: [null], // Für NUMBER
-      maxValue: [null] // Für NUMBER
+      anzeigeReihenfolge: [this.felder.length], // Geändert von reihenfolge
+      optionen: this.fb.array(feldTyp === FeldTyp.SELECT ? ['Option 1', 'Option 2'] : []),
+      checkboxLabelTrue: [feldTyp === FeldTyp.CHECKBOX ? 'Ja' : ''],
+      checkboxLabelFalse: [feldTyp === FeldTyp.CHECKBOX ? 'Nein' : ''],
+      fileTypes: [feldTyp === FeldTyp.FILE_UPLOAD ? '.pdf,.jpg,.png' : ''],
+      maxFileSize: [feldTyp === FeldTyp.FILE_UPLOAD ? 10 : null],
+      minValue: [null],
+      maxValue: [null]
     });
 
     this.felder.push(feldGroup);
@@ -340,6 +338,7 @@ export class FormEditorComponent implements OnInit, OnDestroy {
 
   addField(feld: FormularFeld, index: number): void {
     const feldGroup = this.fb.group({
+      id: [feld.id], // ID setzen, falls vorhanden
       feldTyp: [feld.feldTyp, Validators.required],
       feldName: [feld.feldName, [Validators.required, Validators.pattern('^[a-zA-Z_][a-zA-Z0-9_]*$')]],
       label: [feld.label, Validators.required],
@@ -351,8 +350,7 @@ export class FormEditorComponent implements OnInit, OnDestroy {
       minLength: [feld.minLength],
       maxLength: [feld.maxLength],
       regexPattern: [feld.regexPattern],
-      reihenfolge: [index],
-      // Neue Felder mit Default-Werten
+      anzeigeReihenfolge: [index],
       optionen: this.fb.array(feld['optionen'] || ['Option 1', 'Option 2']),
       checkboxLabelTrue: [feld['checkboxLabelTrue'] || 'Ja'],
       checkboxLabelFalse: [feld['checkboxLabelFalse'] || 'Nein'],
@@ -382,7 +380,7 @@ export class FormEditorComponent implements OnInit, OnDestroy {
 
       // Reihenfolge der verbleibenden Felder aktualisieren
       this.felder.controls.forEach((control, i) => {
-        control.get('reihenfolge')?.setValue(i);
+        control.get('anzeigeReihenfolge')?.setValue(i);
       });
     }
   }
@@ -436,35 +434,69 @@ export class FormEditorComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.successMessage = '';
 
-    // Baue das Formular-Objekt
-    const formularData: Formular = {
+    // Baue das Formular-Objekt mit KORREKTEN Feldnamen
+    const formularData: any = {
       titel: this.formularForm.get('titel')?.value,
       beschreibung: this.formularForm.get('beschreibung')?.value,
       kategorie: this.formularForm.get('kategorie')?.value,
       status: this.status,
-      felder: this.felder.value.map((feld: any, index: number) => ({
-        feldName: feld.feldName,
-        feldTyp: feld.feldTyp,
-        label: feld.label,
-        placeholder: feld.placeholder,
-        defaultValue: feld.defaultValue,
-        pflichtfeld: feld.pflichtfeld,
-        oauthAutoFill: feld.oauthAutoFill,
-        oauthFieldMapping: feld.oauthFieldMapping,
-        minLength: feld.minLength,
-        maxLength: feld.maxLength,
-        regexPattern: feld.regexPattern,
-        reihenfolge: index,
-        // Neue Felder für erweiterte Konfiguration
-        optionen: feld.optionen,
-        checkboxLabelTrue: feld.checkboxLabelTrue,
-        checkboxLabelFalse: feld.checkboxLabelFalse,
-        fileTypes: feld.fileTypes,
-        maxFileSize: feld.maxFileSize,
-        minValue: feld.minValue,
-        maxValue: feld.maxValue
-      }))
+      felder: this.felder.value.map((feld: any, index: number) => {
+        // WICHTIG: IDs der existierenden Felder mitsenden
+        const feldId = this.getFieldId(index);
+
+        // Erstelle das Feld-Objekt mit den richtigen Property-Namen
+        const feldObj: any = {
+          id: feldId, // ID falls vorhanden
+          feldName: feld.feldName,
+          feldTyp: feld.feldTyp,
+          label: feld.label, // Statt beschriftung
+          placeholder: feld.placeholder,
+          defaultValue: feld.defaultValue,
+          pflichtfeld: feld.pflichtfeld,
+          oauthAutoFill: feld.oauthAutoFill,
+          oauthFieldMapping: feld.oauthFieldMapping,
+          minLength: feld.minLength,
+          maxLength: feld.maxLength,
+          regexPattern: feld.regexPattern,
+          anzeigeReihenfolge: index, // WICHTIG: Statt reihenfolge
+        };
+
+        // Füge optionale Felder nur hinzu, wenn sie existieren
+        if (feld.optionen && feld.optionen.length > 0) {
+          feldObj.optionen = feld.optionen;
+        }
+
+        if (feld.checkboxLabelTrue) {
+          feldObj.checkboxLabelTrue = feld.checkboxLabelTrue;
+        }
+
+        if (feld.checkboxLabelFalse) {
+          feldObj.checkboxLabelFalse = feld.checkboxLabelFalse;
+        }
+
+        if (feld.fileTypes) {
+          feldObj.fileTypes = feld.fileTypes;
+        }
+
+        if (feld.maxFileSize) {
+          feldObj.maxFileSize = feld.maxFileSize;
+        }
+
+        if (feld.minValue !== null && feld.minValue !== undefined) {
+          feldObj.minValue = feld.minValue;
+        }
+
+        if (feld.maxValue !== null && feld.maxValue !== undefined) {
+          feldObj.maxValue = feld.maxValue;
+        }
+
+        return feldObj;
+      })
     };
+
+    // Debugging: Logge das gesendete Objekt
+    console.log('Sende Formular-Daten:', JSON.stringify(formularData, null, 2));
+    console.log('Anzahl Felder:', formularData.felder.length);
 
     const saveObservable = this.isEditMode && this.formularId
       ? this.formService.updateFormular(this.formularId, formularData)
@@ -486,10 +518,21 @@ export class FormEditorComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.isSaving = false;
-        this.errorMessage = 'Fehler beim Speichern: ' + (error.error?.message || error.message || 'Unbekannter Fehler');
         console.error('Fehler beim Speichern:', error);
+        console.error('Fehler-Details:', error.error);
+
+        if (error.status === 400) {
+          this.errorMessage = 'Validierungsfehler: ' + (error.error?.message || 'Datenformat ungültig');
+        } else {
+          this.errorMessage = 'Fehler beim Speichern: ' + (error.error?.message || error.message || 'Unbekannter Fehler');
+        }
       }
     });
+  }
+
+  private getFieldId(index: number): number | null {
+    const fieldControl = this.felder.at(index);
+    return fieldControl.get('id')?.value || null;
   }
 
   private getSuccessMessage(status: FormularStatus): string {
