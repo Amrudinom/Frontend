@@ -23,6 +23,13 @@ export interface FormularFeld {
   maxLength?: number;
   regexPattern: string;
   reihenfolge: number;
+  optionen?: string[];
+  checkboxLabelTrue?: string;
+  checkboxLabelFalse?: string;
+  fileTypes?: string;
+  maxFileSize?: number;
+  minValue?: number;
+  maxValue?: number;
 }
 
 // ENTFERNE UMLAUTE - verwende englische Bezeichnungen

@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="form-editor-container">
+  <button routerLink="/form-builder" class="btn btn-secondary">
+      Zurück zur Übersicht
+  </button>
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>{{ isEditMode ? 'Formular bearbeiten' : 'Neues Formular erstellen' }}</h1>
+      <p class="subtitle">Erstellen Sie ein Formular mit Drag & Drop</p>
+      <div class="current-status" *ngIf="isEditMode">
+        <span class="status-badge {{ getStatusBadgeClass(aktuellerStatus) }}">
+          {{ getStatusText(aktuellerStatus) }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Speichern-Status -->
+    <div class="save-status" *ngIf="lastSaved">
+      <i class="fas fa-save"></i>
+      <span>Automatisch gespeichert: {{ lastSaved | date:'HH:mm:ss' }}</span>
+    </div>
+  </div>
+
+  <!-- Fehler-/Erfolgsmeldungen -->
+  <div class="alert alert-error" *ngIf="errorMessage">
+    <i class="fas fa-exclamation-circle"></i>
+    <span>{{ errorMessage }}</span>
+  </div>
+
+  <div class="alert alert-success" *ngIf="successMessage">
+    <i class="fas fa-check-circle"></i>
+    <span>{{ successMessage }}</span>
+    <span class="auto-close">Weiterleitung in 3 Sekunden...</span>
+  </div>
+
+  <!-- Haupt-Editor-Bereich -->
+  <div class="editor-wrapper">
+    <!-- Linke Spalte: Feldbibliothek (25%) -->
+    <div class="field-library">
+      <div class="library-header">
+        <h3><i class="fas fa-th-large"></i> Feldbibliothek</h3>
+        <p>Ziehen Sie Felder in den Formularbereich</p>
+      </div>
+
+      <div class="field-types">
+        <div *ngFor="let fieldType of availableFieldTypes"
+             class="field-type-item"
+             draggable="true"
+             (dragstart)="onDragStart($event, fieldType)">
+          <div class="field-type-icon">
+            <i class="fas" [ngClass]="{
+              'fa-font': fieldType.type === FeldTyp.TEXT,
+              'fa-envelope': fieldType.type === FeldTyp.EMAIL,
+              'fa-hashtag': fieldType.type === FeldTyp.NUMBER,
+              'fa-calendar-alt': fieldType.type === FeldTyp.DATE,
+              'fa-align-left': fieldType.type === FeldTyp.TEXTAREA,
+              'fa-check-square': fieldType.type === FeldTyp.CHECKBOX,
+              'fa-caret-down': fieldType.type === FeldTyp.SELECT,
+              'fa-paperclip': fieldType.type === FeldTyp.FILE_UPLOAD
+            }"></i>
+          </div>
+          <div class="field-type-info">
+            <strong>{{ fieldType.label }}</strong>
+            <small>{{ fieldType.description }}</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="oauth-info">
+        <h4><i class="fas fa-user-shield"></i> OAuth-Felder</h4>
+        <p class="text-muted">Diese Felder können automatisch aus Login-Daten befüllt werden:</p>
+        <ul class="oauth-list">
+          <li *ngFor="let option of oauthMappingOptions">
+            <strong>{{ option.label }}</strong>
+            <small>{{ option.description }}</small>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Mittlere Spalte: Formular-Editor (75%) -->
+    <div class="form-editor-main">
+      <!-- Grunddaten -->
+      <div class="form-section" [formGroup]="formularForm">
+        <h3><i class="fas fa-info-circle"></i> Grunddaten</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="required">Formular Titel</label>
+            <input type="text"
+                   class="form-control"
+                   formControlName="titel"
+                   placeholder="z.B. Bildungsantrag">
+            <div *ngIf="formularForm.get('titel')?.invalid && formularForm.get('titel')?.touched"
+                 class="invalid-feedback">
+              Bitte geben Sie einen Titel ein
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="required">Kategorie</label>
+            <select class="form-control" formControlName="kategorie">
+              <option value="">Bitte wählen...</option>
+              <option value="BILDUNG">Bildung</option>
+              <option value="PERSONAL">Personal</option>
+              <option value="FINANZEN">Finanzen</option>
+              <option value="GESUNDHEIT">Gesundheit</option>
+              <option value="SONSTIGES">Sonstiges</option>
+            </select>
+            <div *ngIf="formularForm.get('kategorie')?.invalid && formularForm.get('kategorie')?.touched"
+                 class="invalid-feedback">
+              Bitte wählen Sie eine Kategorie
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Beschreibung</label>
+          <textarea class="form-control"
+                    formControlName="beschreibung"
+                    rows="3"
+                    placeholder="Beschreiben Sie kurz den Zweck dieses Formulars..."></textarea>
+        </div>
+      </div>
+
+      <!-- Formular Felder -->
+      <div class="form-section felder-section"
+           (dragover)="onDragOver($event)"
+           (drop)="onDrop($event)">
+        <h3><i class="fas fa-list-alt"></i> Formular Felder</h3>
+        <p class="section-subtitle">Ziehen Sie Felder hierher oder klicken Sie auf ein Feld in der Bibliothek</p>
+
+        <!-- Felder Liste -->
+        <div class="fields-list" *ngIf="felder.length > 0; else noFields">
+          <div *ngFor="let feld of felder.controls; let i = index"
+               class="feld-item"
+               [class.selected]="selectedFieldIndex === i"
+               [attr.data-index]="i">
+            <div class="feld-content">
+              <div class="feld-header">
+                <div class="feld-title">
+                  <div class="feld-icon">
+                    <i class="fas" [ngClass]="{
+                      'fa-font': feld.get('feldTyp')?.value === FeldTyp.TEXT,
+                      'fa-envelope': feld.get('feldTyp')?.value === FeldTyp.EMAIL,
+                      'fa-hashtag': feld.get('feldTyp')?.value === FeldTyp.NUMBER,
+                      'fa-calendar-alt': feld.get('feldTyp')?.value === FeldTyp.DATE,
+                      'fa-align-left': feld.get('feldTyp')?.value === FeldTyp.TEXTAREA,
+                      'fa-check-square': feld.get('feldTyp')?.value === FeldTyp.CHECKBOX,
+                      'fa-caret-down': feld.get('feldTyp')?.value === FeldTyp.SELECT,
+                      'fa-paperclip': feld.get('feldTyp')?.value === FeldTyp.FILE_UPLOAD
+                    }"></i>
+                  </div>
+                  <h4>
+                    {{ feld.get('label')?.value || 'Unbenanntes Feld' }}
+                    <span class="badge badge-pflicht" *ngIf="feld.get('pflichtfeld')?.value">
+                      <i class="fas fa-asterisk"></i> Pflichtfeld
+                    </span>
+                    <span class="badge badge-oauth" *ngIf="showOAuthInfo(feld)">
+                      <i class="fas fa-user-check"></i> OAuth
+                    </span>
+                  </h4>
+                </div>
+                <div class="feld-actions">
+                  <div class="move-buttons">
+                    <button class="btn btn-sm btn-outline-secondary move-btn"
+                            (click)="moveFieldUp(i)"
+                            [disabled]="i === 0">
+                      <i class="fas fa-arrow-up"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary move-btn"
+                            (click)="moveFieldDown(i)"
+                            [disabled]="i === felder.length - 1">
+                      <i class="fas fa-arrow-down"></i>
+                    </button>
+                  </div>
+                  <button class="btn btn-sm btn-outline-secondary"
+                          (click)="selectField(i)">
+                    <i class="fas fa-edit"></i> Bearbeiten
+                  </button>
+                  <button class="btn btn-sm btn-danger"
+                          (click)="entferneFeld(i)">
+                    <i class="fas fa-trash"></i> Löschen
+                  </button>
+                </div>
+              </div>
+
+              <!-- Feld-Konfiguration (nur wenn ausgewählt) -->
+              <div class="feld-konfiguration" *ngIf="selectedFieldIndex === i">
+                <!-- Feld-Typ (nicht änderbar) -->
+                <div class="form-group">
+                  <label class="required">Feld-Typ</label>
+                  <input type="text"
+                         class="form-control"
+                         [value]="getFieldTypeName(feld.get('feldTyp')?.value)"
+                         disabled>
+                  <small class="form-text">Der Feld-Typ kann nicht geändert werden</small>
+                </div>
+
+                <!-- Technischer Name und Anzeigename -->
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="required">Technischer Name (Backend)</label>
+                    <input type="text"
+                           class="form-control"
+                           [value]="feld.get('feldName')?.value || ''"
+                           (input)="updateFieldValue(i, 'feldName', $any($event.target).value)"
+                           placeholder="z.B. email_adresse">
+                    <div *ngIf="feld.get('feldName')?.invalid && feld.get('feldName')?.touched"
+                         class="invalid-feedback">
+                      Nur Buchstaben, Zahlen und Unterstriche erlaubt. Muss eindeutig sein.
+                    </div>
+                    <small class="form-text">Wird im Backend verwendet. Muss eindeutig sein.</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="required">Anzeigename (Frontend)</label>
+                    <input type="text"
+                           class="form-control"
+                           [value]="feld.get('label')?.value || ''"
+                           (input)="updateFieldValue(i, 'label', $any($event.target).value)"
+                           placeholder="z.B. E-Mail-Adresse">
+                    <small class="form-text">Wird den Benutzern angezeigt</small>
+                  </div>
+                </div>
+
+                <!-- Platzhalter und Standardwert -->
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Platzhalter-Text</label>
+                    <input type="text"
+                           class="form-control"
+                           [value]="feld.get('placeholder')?.value || ''"
+                           (input)="updateFieldValue(i, 'placeholder', $any($event.target).value)"
+                           [placeholder]="getPlaceholderHint(feld.get('feldTyp')?.value)">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Standardwert</label>
+                    <input type="text"
+                           class="form-control"
+                           [value]="feld.get('defaultValue')?.value || ''"
+                           (input)="updateFieldValue(i, 'defaultValue', $any($event.target).value)">
+                  </div>
+                </div>
+
+                <!-- Allgemeine Optionen (für alle Feldtypen) -->
+                <div class="feld-optionen">
+                  <h5><i class="fas fa-cog"></i> Allgemeine Optionen</h5>
+                  <div class="optionen-grid">
+                    <div class="checkbox-option">
+                      <input type="checkbox"
+                             [id]="'pflichtfeld_' + i"
+                             [checked]="feld.get('pflichtfeld')?.value"
+                             (change)="updateFieldValue(i, 'pflichtfeld', $any($event.target).checked)">
+                      <label [for]="'pflichtfeld_' + i" class="checkbox-label">
+                        <i class="fas fa-asterisk"></i>
+                        Pflichtfeld
+                      </label>
+                    </div>
+
+                    <!-- OAuth Auto-Fill (nur für bestimmte Feldtypen) -->
+                    <div class="checkbox-option" *ngIf="feld.get('feldTyp')?.value === FeldTyp.EMAIL || feld.get('feldTyp')?.value === FeldTyp.TEXT">
+                      <input type="checkbox"
+                             [id]="'oauthAutoFill_' + i"
+                             [checked]="feld.get('oauthAutoFill')?.value"
+                             (change)="updateFieldValue(i, 'oauthAutoFill', $any($event.target).checked)">
+                      <label [for]="'oauthAutoFill_' + i" class="checkbox-label">
+                        <i class="fas fa-user-check"></i>
+                        Automatisch aus Login-Daten befüllen
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- OAuth Mapping (wenn OAuth aktiviert) -->
+                  <div class="form-group" *ngIf="feld.get('oauthAutoFill')?.value">
+                    <label>OAuth-Feld-Mapping</label>
+                    <select class="form-control"
+                            [value]="feld.get('oauthFieldMapping')?.value || ''"
+                            (change)="updateFieldValue(i, 'oauthFieldMapping', $any($event.target).value)">
+                      <option value="">Keine automatische Befüllung</option>
+                      <option *ngFor="let option of oauthMappingOptions"
+                              [value]="option.value">
+                        {{ option.label }}
+                      </option>
+                    </select>
+                    <small class="form-text" *ngIf="feld.get('oauthFieldMapping')?.value">
+                      {{ getOAuthMappingDescription(feld.get('oauthFieldMapping')?.value) }}
+                    </small>
+                  </div>
+                </div>
+
+                <!-- SPEZIELLE KONFIGURATION FÜR AUSWAHL-FELDER -->
+                <div class="feld-spezial-konfig" *ngIf="feld.get('feldTyp')?.value === FeldTyp.SELECT">
+                  <h5><i class="fas fa-list-ul"></i> Auswahl-Optionen konfigurieren</h5>
+
+                  <div *ngIf="feld.get('optionen') else keineOptionen">
+                    <div class="options-list">
+                      <div *ngFor="let option of feld.get('optionen')?.value; let optionIndex = index"
+                           class="option-item">
+                        <input type="text"
+                               class="form-control option-input"
+                               [value]="option"
+                               (input)="updateOption(i, optionIndex, $any($event.target).value)"
+                               placeholder="Optionstext">
+                        <button type="button"
+                                class="btn btn-danger btn-sm option-remove"
+                                (click)="removeOption(i, optionIndex)"
+                                title="Option entfernen">
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ng-template #keineOptionen>
+                    <p class="text-muted">Noch keine Optionen definiert</p>
+                  </ng-template>
+
+                  <button type="button"
+                          class="btn btn-outline-success btn-sm mt-2"
+                          (click)="addOption(i)">
+                    <i class="fas fa-plus"></i> Option hinzufügen
+                  </button>
+                </div>
+
+                <!-- SPEZIELLE KONFIGURATION FÜR CHECKBOX-FELDER -->
+                <div class="feld-spezial-konfig" *ngIf="feld.get('feldTyp')?.value === FeldTyp.CHECKBOX">
+                  <h5><i class="fas fa-check-square"></i> Checkbox Labels konfigurieren</h5>
+
+                  <div class="checkbox-labels-konfig">
+                    <div class="form-group">
+                      <label>Label (angekreuzt):</label>
+                      <input type="text"
+                             class="form-control"
+                             [value]="feld.get('checkboxLabelTrue')?.value || 'Ja'"
+                             (input)="updateCheckboxLabel(i, 'true', $any($event.target).value)"
+                             placeholder="z.B. Ja, ich stimme zu">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Label (nicht angekreuzt):</label>
+                      <input type="text"
+                             class="form-control"
+                             [value]="feld.get('checkboxLabelFalse')?.value || 'Nein'"
+                             (input)="updateCheckboxLabel(i, 'false', $any($event.target).value)"
+                             placeholder="z.B. Nein, ich stimme nicht zu">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SPEZIELLE KONFIGURATION FÜR DATEI-UPLOAD -->
+                <div class="feld-spezial-konfig" *ngIf="feld.get('feldTyp')?.value === FeldTyp.FILE_UPLOAD">
+                  <h5><i class="fas fa-file-upload"></i> Datei-Upload Optionen</h5>
+
+                  <div class="form-group">
+                    <label>Erlaubte Dateitypen</label>
+                    <input type="text"
+                           class="form-control"
+                           [value]="feld.get('fileTypes')?.value || '.pdf,.jpg,.png'"
+                           (input)="updateFieldValue(i, 'fileTypes', $any($event.target).value)"
+                           placeholder="z.B. .pdf, .jpg, .png (leer lassen für alle)">
+                    <small class="form-text">Komma-getrennte Liste von Dateiendungen</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Maximale Dateigröße (MB)</label>
+                    <input type="number"
+                           class="form-control"
+                           [value]="feld.get('maxFileSize')?.value || 10"
+                           (input)="updateFieldValue(i, 'maxFileSize', $any($event.target).value)"
+                           placeholder="z.B. 10">
+                  </div>
+                </div>
+
+                <!-- Validierung (für TEXT, EMAIL, NUMBER) -->
+                <div class="feld-spezial-konfig" *ngIf="feld.get('feldTyp')?.value === FeldTyp.TEXT || feld.get('feldTyp')?.value === FeldTyp.EMAIL || feld.get('feldTyp')?.value === FeldTyp.NUMBER">
+                  <h5><i class="fas fa-ruler-combined"></i> Validierung</h5>
+
+                  <div class="form-row">
+                    <div class="form-group" *ngIf="feld.get('feldTyp')?.value !== FeldTyp.NUMBER">
+                      <label>Minimale Länge</label>
+                      <input type="number"
+                             class="form-control"
+                             [value]="feld.get('minLength')?.value || ''"
+                             (input)="updateFieldValue(i, 'minLength', $any($event.target).value)"
+                             min="0">
+                    </div>
+
+                    <div class="form-group" *ngIf="feld.get('feldTyp')?.value !== FeldTyp.NUMBER">
+                      <label>Maximale Länge</label>
+                      <input type="number"
+                             class="form-control"
+                             [value]="feld.get('maxLength')?.value || ''"
+                             (input)="updateFieldValue(i, 'maxLength', $any($event.target).value)"
+                             min="1">
+                    </div>
+
+                    <div class="form-group" *ngIf="feld.get('feldTyp')?.value === FeldTyp.NUMBER">
+                      <label>Minimaler Wert</label>
+                      <input type="number"
+                             class="form-control"
+                             [value]="feld.get('minValue')?.value || ''"
+                             (input)="updateFieldValue(i, 'minValue', $any($event.target).value)">
+                    </div>
+
+                    <div class="form-group" *ngIf="feld.get('feldTyp')?.value === FeldTyp.NUMBER">
+                      <label>Maximaler Wert</label>
+                      <input type="number"
+                             class="form-control"
+                             [value]="feld.get('maxValue')?.value || ''"
+                             (input)="updateFieldValue(i, 'maxValue', $any($event.target).value)">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Regex-Pattern (Regulärer Ausdruck)</label>
+                    <input type="text"
+                           class="form-control"
+                           [value]="feld.get('regexPattern')?.value || ''"
+                           (input)="updateFieldValue(i, 'regexPattern', $any($event.target).value)"
+                           placeholder="z.B. ^[a-zA-Z0-9]+$">
+                    <small class="form-text">Leer lassen für keine spezielle Validierung</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noFields>
+          <div class="empty-fields" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+            <div class="empty-state">
+              <i class="fas fa-cloud-upload-alt" style="font-size: 48px;"></i>
+              <h4>Noch keine Felder vorhanden</h4>
+              <p>Ziehen Sie Felder aus der Bibliothek hierher oder fügen Sie ein neues Feld hinzu</p>
+              <button class="btn btn-primary" (click)="neuesFeld()">
+                <i class="fas fa-plus"></i> Erstes Feld hinzufügen
+              </button>
+            </div>
+          </div>
+        </ng-template>
+
+        <!-- Feld hinzufügen Button -->
+        <div class="add-field-section" *ngIf="felder.length > 0">
+          <button class="btn btn-outline-primary" (click)="neuesFeld()">
+            <i class="fas fa-plus"></i> Weiteres Feld hinzufügen
+          </button>
+        </div>
+      </div>
+
+      <!-- Status Buttons und Speichern (in der Mitte) -->
+      <div class="form-section status-section-middle">
+        <h3><i class="fas fa-flag"></i> Formular-Status</h3>
+        <p class="section-subtitle">Wählen Sie den Status für dieses Formular</p>
+
+        <div class="status-buttons-middle">
+          <button class="status-btn-middle"
+                  [class.active]="status === FormularStatus.DRAFT"
+                  (click)="setEntwurfStatus()">
+            <i class="fas fa-edit"></i>
+            <span>Entwurf</span>
+            <small>Nur für Sie sichtbar</small>
+          </button>
+
+          <button class="status-btn-middle"
+                  [class.active]="status === FormularStatus.PUBLISHED"
+                  (click)="setAktivStatus()">
+            <i class="fas fa-check-circle"></i>
+            <span>Aktiv</span>
+            <small>Für Bürger sichtbar</small>
+          </button>
+
+          <button class="status-btn-middle"
+                  [class.active]="status === FormularStatus.ARCHIVED"
+                  (click)="setArchiviertStatus()">
+            <i class="fas fa-archive"></i>
+            <span>Archiviert</span>
+            <small>Nicht mehr sichtbar</small>
+          </button>
+        </div>
+
+        <!-- VORSCHAU BUTTON IN DER MITTE -->
+        <div class="preview-button-section">
+          <button class="btn btn-outline-secondary btn-lg" (click)="openPreview()">
+            <i class="fas fa-eye"></i> Vorschau anzeigen
+          </button>
+          <p class="form-text">Öffnet eine Vorschau des aktuellen Formulars</p>
+        </div>
+
+        <div class="form-save-section">
+          <button class="btn btn-primary btn-lg"
+                  (click)="speichereFormular()"
+                  [disabled]="isSaving || felder.length === 0">
+            <span *ngIf="!isSaving">
+              <i class="fas fa-save"></i>
+              {{ isEditMode ? 'Änderungen speichern' : 'Formular erstellen' }}
+            </span>
+            <span *ngIf="isSaving" class="spinner">
+              <i class="fas fa-spinner fa-spin"></i> Wird gespeichert...
+            </span>
+          </button>
+          <p class="form-text">Formular wird mit dem ausgewählten Status gespeichert</p>
+          <p class="auto-save-note" *ngIf="lastSaved">
+            <i class="fas fa-history"></i> Letzte automatische Speicherung: {{ lastSaved | date:'HH:mm:ss' }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Vorschau Modal -->
+<div *ngIf="showPreviewModal" class="preview-modal">
+  <div class="modal-overlay" (click)="closePreview()"></div>
+
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2><i class="fas fa-eye"></i> Formular-Vorschau</h2>
+      <button class="close-btn" (click)="closePreview()">
+        <i class="fas fa-times"></i> Schließen
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="preview-formular">
+        <div class="preview-status">
+          <span class="status-badge {{ getStatusBadgeClass(status) }}">
+            {{ getStatusText(status) }}
+          </span>
+        </div>
+
+        <h2 class="preview-title">{{ formularForm.get('titel')?.value || 'Formular' }}</h2>
+        <p class="preview-description">{{ formularForm.get('beschreibung')?.value || '' }}</p>
+
+        <div *ngIf="felder.length > 0; else previewEmpty">
+          <div *ngFor="let feld of felder.controls" class="preview-field">
+            <!-- OAuth Hinweis -->
+            <div class="oauth-preview-hint" *ngIf="showOAuthInfo(feld)">
+              <i class="fas fa-user-check"></i>
+              Wird automatisch mit {{ getOAuthMappingLabel(feld.get('oauthFieldMapping')?.value) }} befüllt
+            </div>
+
+            <label class="preview-label">
+              {{ feld.get('label')?.value || 'Feld' }}
+              <span class="required-star" *ngIf="feld.get('pflichtfeld')?.value">*</span>
+            </label>
+
+            <!-- Eingabefeld basierend auf Typ -->
+            <div [ngSwitch]="feld.get('feldTyp')?.value">
+              <!-- Textfeld -->
+              <input *ngSwitchCase="FeldTyp.TEXT"
+                     type="text"
+                     class="form-control"
+                     [placeholder]="feld.get('placeholder')?.value || 'Text eingeben'"
+                     [value]="feld.get('defaultValue')?.value">
+
+              <!-- E-Mail Feld -->
+              <input *ngSwitchCase="FeldTyp.EMAIL"
+                     type="email"
+                     class="form-control"
+                     [placeholder]="feld.get('placeholder')?.value || 'email@beispiel.de'"
+                     [value]="feld.get('defaultValue')?.value">
+
+              <!-- Zahl -->
+              <input *ngSwitchCase="FeldTyp.NUMBER"
+                     type="number"
+                     class="form-control"
+                     [placeholder]="feld.get('placeholder')?.value || 'Zahl eingeben'"
+                     [value]="feld.get('defaultValue')?.value">
+
+              <!-- Datum -->
+              <input *ngSwitchCase="FeldTyp.DATE"
+                     type="date"
+                     class="form-control"
+                     [value]="feld.get('defaultValue')?.value">
+
+              <!-- Textbereich -->
+              <textarea *ngSwitchCase="FeldTyp.TEXTAREA"
+                        class="form-control"
+                        rows="4"
+                        [placeholder]="feld.get('placeholder')?.value || 'Text eingeben'">{{ feld.get('defaultValue')?.value }}</textarea>
+
+              <!-- Checkbox -->
+              <div *ngSwitchCase="FeldTyp.CHECKBOX" class="checkbox-preview">
+                <label>
+                  <input type="checkbox"
+                         [checked]="feld.get('defaultValue')?.value === 'true'">
+                  {{ feld.get('checkboxLabelTrue')?.value || 'Ja' }}
+                </label>
+                <small class="checkbox-alternative" *ngIf="feld.get('checkboxLabelFalse')?.value">
+                  ({{ feld.get('checkboxLabelFalse')?.value }})
+                </small>
+              </div>
+
+              <!-- Select -->
+              <select *ngSwitchCase="FeldTyp.SELECT" class="form-control">
+                <option value="">Bitte auswählen...</option>
+                <option *ngFor="let option of feld.get('optionen')?.value || ['Option 1', 'Option 2']"
+                        [value]="option">
+                  {{ option }}
+                </option>
+              </select>
+
+              <!-- Datei-Upload -->
+              <input *ngSwitchCase="FeldTyp.FILE_UPLOAD"
+                     type="file"
+                     class="form-control">
+
+              <!-- Default -->
+              <input *ngSwitchDefault
+                     type="text"
+                     class="form-control"
+                     [placeholder]="feld.get('placeholder')?.value || 'Wert eingeben'">
+            </div>
+
+            <!-- Validierungshinweise -->
+            <div class="validation-hints" *ngIf="feld.get('minLength')?.value || feld.get('maxLength')?.value">
+              <small class="text-muted">
+                <span *ngIf="feld.get('minLength')?.value">Mind. {{ feld.get('minLength')?.value }} Zeichen</span>
+                <span *ngIf="feld.get('minLength')?.value && feld.get('maxLength')?.value"> • </span>
+                <span *ngIf="feld.get('maxLength')?.value">Max. {{ feld.get('maxLength')?.value }} Zeichen</span>
+              </small>
+            </div>
+          </div>
+
+          <!-- Submit Button in Vorschau -->
+          <div class="preview-submit">
+            <button class="btn btn-primary btn-lg" [disabled]="true">
+              <i class="fas fa-paper-plane"></i> Formular absenden
+            </button>
+            <p class="preview-note">
+              <i class="fas fa-info-circle"></i> Dies ist nur eine Vorschau
+            </p>
+          </div>
+        </div>
+
+        <ng-template #previewEmpty>
+          <div class="preview-empty">
+            <i class="fas fa-inbox" style="font-size: 64px;"></i>
+            <h4>Noch keine Felder vorhanden</h4>
+            <p>Fügen Sie Felder hinzu, um eine Vorschau zu sehen</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
