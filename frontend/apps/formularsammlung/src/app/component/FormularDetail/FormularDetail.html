@@ -11,19 +11,109 @@
 
       @for (feld of formular.felder; track feld.id) {
         <div class="form-group">
-          <label>
-            {{ feld.beschriftung }}
-          </label>
+          @if(feld.pflichtfeld){
+            <label>
+              {{feld.label }} *
+            </label>
+          } @else {
+            <label>
+              {{ feld.label }}
+            </label>
+          }
+          @if (feld.feldTyp === 'TEXT') {
+            <input
+              type="text"
+              [formControlName]="feld.feldName"
+              [placeholder]="feld.placeholder || ''"
+              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
+              class="form-control"
+            />
+          }
 
-          <input
-            [type]="feld.feldTyp === 'EMAIL' ? 'email' : 'text'"
-            [formControlName]="feld.feldName"
-            class="form-control"
-          />
+          @if (feld.feldTyp === 'TEXTAREA') {
+            <textarea
+              [formControlName]="feld.feldName"
+              [placeholder]="feld.placeholder || ''"
+              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
+              class="form-control"
+              rows="4"
+            ></textarea>
+          }
+
+          @if (feld.feldTyp === 'EMAIL') {
+            <input
+              type="email"
+              [formControlName]="feld.feldName"
+              [placeholder]="feld.placeholder || ''"
+              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
+              class="form-control"
+            />
+          }
+
+          @if (feld.feldTyp === 'ZAHL') {
+            <input
+              type="number"
+              [formControlName]="feld.feldName"
+              [placeholder]="feld.placeholder || ''"
+              [min]="feld.minValue || null"
+              [max]="feld.maxValue || null"
+              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
+              class="form-control"
+            />
+          }
+
+          @if (feld.feldTyp === 'DATUM') {
+            <input
+              type="date"
+              [formControlName]="feld.feldName"
+              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
+              class="form-control"
+            />
+          }
+
+          @if (feld.feldTyp === 'CHECKBOX') {
+            <div class="checkbox-wrapper">
+              <input
+                type="checkbox"
+                [formControlName]="feld.feldName"
+                class="form-check-input"
+                id="checkbox_{{ feld.id }}"
+              />
+              <label for="checkbox_{{ feld.id }}" class="form-check-label">
+                {{ feld.checkboxLabelTrue || 'Ja' }}
+              </label>
+            </div>
+          }
+
+          @if (feld.feldTyp === 'AUSWAHLLISTE' && feld.optionen) {
+            <select
+              [formControlName]="feld.feldName"
+              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
+              class="form-control"
+            >
+              <option value="">Bitte wählen...</option>
+              @for (option of feld.optionen; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          }
+
+          <!-- Fehlermeldung -->
+          @if (formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched) {
+            <small class="error-message">
+              Dieses Feld ist erforderlich
+            </small>
+          }
+
         </div>
       }
     </form>
   }
+
   <button (click)="goBack()">Zurück</button>
-  <button>Antrag erstellen</button>
+  <button (click)="antragErstellen()"> Antrag erstellen</button>
 </div>
+
+@if (validationError) {
+  <div class="alert-error">{{validationError}}</div>
+}

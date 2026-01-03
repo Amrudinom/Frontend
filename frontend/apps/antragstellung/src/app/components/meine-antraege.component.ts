@@ -234,8 +234,17 @@ export class MeineAntraegeComponent implements OnInit {
   error: string | null = null;
 
   ngOnInit() {
-    console.log('MeineAntragComponent geladen');
-    this.loadAntraege();
+
+    //für die automatische Speicherung des Users sofern es nicht in der Datenbank gespeichert ist
+    this.http.get('/api/users/me').subscribe({
+      next: (user) => {
+        console.log('User loaded:', user);
+        this.loadAntraege();
+      },
+      error: (err) => console.error('Error:', err)
+    });
+
+
 
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))

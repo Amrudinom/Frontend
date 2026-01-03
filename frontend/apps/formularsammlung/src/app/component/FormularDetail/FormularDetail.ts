@@ -1,7 +1,7 @@
 
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '@auth0/auth0-angular';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -20,12 +20,25 @@ interface FormularFeld{
   id: number;
   feldName: string;
   feldTyp: string;
-  beschriftung: string;
-  oauthVorfeld: string;
+  label: string;
+  pflichtfeld: boolean;
+  oauthVorfeld: boolean;
   anzeigeReihenfolge: number;
+  placeholder?: string;
+  minValue?: number;
+  maxValue?: number;
+  checkboxLabelTrue?: string;
+  checkboxLabelFalse?: string;
+  fileTypes?: string;
+  optionen?: string[];
 }
 
-
+interface AntragRequest {
+  formularId: number;
+  titel: string;
+  beschreibung?: string;
+  antworten: { [key: string]: any };  // Alle Formular-Antworten
+}
 
 @Component({
   selector: 'app-formular-detail',
@@ -41,6 +54,8 @@ export class FormularDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private fb = inject(FormBuilder);
+
+
 
   formular: Formular | null = null;
   userProfile: any = null;
@@ -102,13 +117,18 @@ export class FormularDetailComponent implements OnInit {
     this.formular.felder
       .sort((a, b) => a.anzeigeReihenfolge - b.anzeigeReihenfolge)
       .forEach(feld => {
-        group[feld.feldName] = [''];
+        if(feld.pflichtfeld){
+          group[feld.feldName] = ['', Validators.required];
+        }
+        else{
+          group[feld.feldName] = [''];
+        }
       });
 
     this.formularForm = this.fb.group(group);
   }
 
-  /* Daten werden automatisch vorausgefüllt*/
+  /* OAuth Daten werden herausgefiltert und in die FormularForm geschrieben*/
   prefillFormWithUserData() {
     if(!this.userProfile || !this.formular || !this.formularForm) return;
 
@@ -118,7 +138,7 @@ export class FormularDetailComponent implements OnInit {
       if (feld.oauthVorfeld){
         const feldNameLower = feld.feldName.toLowerCase();
 
-        if(feldNameLower.includes('name')) {
+        if(feldNameLower.includes('name' )) {
           prefillData[feld.feldName] = this.userProfile.name || '';
         }
         else if (feldNameLower.includes('email')){
@@ -134,5 +154,63 @@ export class FormularDetailComponent implements OnInit {
   goBack() {
     this.router.navigate(['/formulare']);
   }
+
+  validationError: string | null = null;
+  antragErstellen(){
+    if(this.formularForm.invalid){
+      this.validationError = 'Bitte füllen Sie alle Pflichtfelder aus!';
+
+      Object.keys(this.formularForm.controls).forEach(key => {
+        this.formularForm.get(key)?.markAsTouched();
+      });
+
+      setTimeout(() =>{
+        this.validationError = null;
+      }, 3000);
+
+      return;
+    }
+
+    this.validationError = null;
+
+    const betragFeld = this.formular!.felder.find(f =>{
+      const lowerName = f.feldName.toLowerCase();
+      return f.feldTyp === 'ZAHL' &&
+        (lowerName.includes('betrag') ||
+        lowerName.includes('budget') ||
+        lowerName.includes('summe') ||
+        lowerName.includes('förderbetrag') ||
+        lowerName.includes('kosten'));
+
+    });
+
+    const betrag = betragFeld ? parseFloat(this.formularForm.get(betragFeld.feldName)?.value) || 0:0;
+
+    const antragData = {
+      formularId: this.formular!.id,
+      titel: this.formular!.titel,
+      beschreibung: this.formular!.beschreibung,
+      antworten: this.formularForm.value,
+      betrag: betrag
+    };
+
+    console.log('Sende Antrag:', antragData);
+
+    //POST Request
+    this.http.post('/api/formulare', antragData).subscribe({
+      next: (response) => {
+        console.log('Antrag erfolgreich erstellt:', response);
+        this.loading = false;
+        this.router.navigate(['/formulare']);
+      },
+      error: (err) => {
+        console.error('Fehler beim Erstellen des Antrags:', err);
+        this.error = 'Fehler beim Erstellen des Antrags: ' + err.message;
+        this.loading = false;
+      }
+    });
+
+  }
+
 
 }
