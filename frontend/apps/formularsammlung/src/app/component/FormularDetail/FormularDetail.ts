@@ -137,11 +137,12 @@ export class FormularDetailComponent implements OnInit {
     this.formular.felder.forEach(feld => {
       if (feld.oauthVorfeld){
         const feldNameLower = feld.feldName.toLowerCase();
+        const feldTyptLower = feld.feldTyp.toLowerCase();
 
         if(feldNameLower.includes('name' )) {
           prefillData[feld.feldName] = this.userProfile.name || '';
         }
-        else if (feldNameLower.includes('email')){
+        else if (feldTyptLower.includes('email' )){
           prefillData[feld.feldName] = this.userProfile.email || '';
         }
       }
@@ -156,6 +157,9 @@ export class FormularDetailComponent implements OnInit {
   }
 
   validationError: string | null = null;
+  successMessage: string | null = null;
+
+  /* Speichert ausgefüllte Formulare um einen Antrag zu erstellen */
   antragErstellen(){
     if(this.formularForm.invalid){
       this.validationError = 'Bitte füllen Sie alle Pflichtfelder aus!';
@@ -170,8 +174,8 @@ export class FormularDetailComponent implements OnInit {
 
       return;
     }
-
     this.validationError = null;
+
 
     const betragFeld = this.formular!.felder.find(f =>{
       const lowerName = f.feldName.toLowerCase();
@@ -201,7 +205,11 @@ export class FormularDetailComponent implements OnInit {
       next: (response) => {
         console.log('Antrag erfolgreich erstellt:', response);
         this.loading = false;
-        this.router.navigate(['/formulare']);
+
+        this.successMessage = 'Antrag erfolgreich erstellt';
+        setTimeout(() =>{
+          this.router.navigate(['/formulare']);
+          },2000);
       },
       error: (err) => {
         console.error('Fehler beim Erstellen des Antrags:', err);
@@ -211,6 +219,4 @@ export class FormularDetailComponent implements OnInit {
     });
 
   }
-
-
 }

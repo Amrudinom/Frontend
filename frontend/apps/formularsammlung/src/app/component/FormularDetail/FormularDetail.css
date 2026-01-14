@@ -19,11 +19,31 @@ button {
 }
 
 .alert-error {
-  color: #dc3545;
-  font-size: large;
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg,#dc3545 0%, #c82333 100%);
+  color: white;
+  padding: 14px 28px;
+  border-radius: 50px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  font-size: 15px;
+  font-weight: 500;
+  z-index: 9999;
 }
 
-.form-control.invalid {
-  border-color: red;
-  border-width: medium;
+.alert-success {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg,#28a745 0%, #218838 100%);
+  color: white;
+  padding: 14px 28px;
+  border-radius: 50px;
+  box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+  font-size: 15px;
+  font-weight: 500;
+  z-index: 9999;
 }

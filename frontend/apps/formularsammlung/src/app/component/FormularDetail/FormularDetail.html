@@ -25,7 +25,6 @@
               type="text"
               [formControlName]="feld.feldName"
               [placeholder]="feld.placeholder || ''"
-              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
               class="form-control"
             />
           }
@@ -34,7 +33,6 @@
             <textarea
               [formControlName]="feld.feldName"
               [placeholder]="feld.placeholder || ''"
-              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
               class="form-control"
               rows="4"
             ></textarea>
@@ -45,7 +43,6 @@
               type="email"
               [formControlName]="feld.feldName"
               [placeholder]="feld.placeholder || ''"
-              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
               class="form-control"
             />
           }
@@ -57,7 +54,6 @@
               [placeholder]="feld.placeholder || ''"
               [min]="feld.minValue || null"
               [max]="feld.maxValue || null"
-              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
               class="form-control"
             />
           }
@@ -66,7 +62,6 @@
             <input
               type="date"
               [formControlName]="feld.feldName"
-              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
               class="form-control"
             />
           }
@@ -88,7 +83,6 @@
           @if (feld.feldTyp === 'AUSWAHLLISTE' && feld.optionen) {
             <select
               [formControlName]="feld.feldName"
-              [class.invalid]="formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched"
               class="form-control"
             >
               <option value="">Bitte wählen...</option>
@@ -97,14 +91,6 @@
               }
             </select>
           }
-
-          <!-- Fehlermeldung -->
-          @if (formularForm.get(feld.feldName)?.invalid && formularForm.get(feld.feldName)?.touched) {
-            <small class="error-message">
-              Dieses Feld ist erforderlich
-            </small>
-          }
-
         </div>
       }
     </form>
@@ -116,4 +102,8 @@
 
 @if (validationError) {
   <div class="alert-error">{{validationError}}</div>
+}
+
+@if (successMessage){
+  <div class="alert-success">{{successMessage}}</div>
 }
