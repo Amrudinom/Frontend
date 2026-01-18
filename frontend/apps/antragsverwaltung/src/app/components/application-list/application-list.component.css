@@ -106,3 +106,21 @@ h1 {
   background: #f8f9fa;
   border-radius: 8px;
 }
+.actions {
+  margin-top: 1rem;
+  text-align: right;
+}
+
+.details-button {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.details-button:hover {
+  background-color: #125ea6;
+}
+

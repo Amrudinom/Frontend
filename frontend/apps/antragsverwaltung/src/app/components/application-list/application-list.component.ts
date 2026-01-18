@@ -184,4 +184,8 @@ export class ApplicationListComponent implements OnInit {
     };
     return statusMap[status] || status;
   }
+  openDetails(antragId: number): void {
+    this.router.navigate(['/antraege-verwaltung', antragId]);
+  }
+
 }

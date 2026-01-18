@@ -1,0 +1,95 @@
+<div class="container">
+  <a routerLink="/erhaltene-antraege" class="back-link">← Zurück zur Übersicht</a>
+
+  <h1>Übermitteltes Formular</h1>
+
+  <div *ngIf="loading" class="loading">Lade Formulardaten…</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <ng-container *ngIf="!loading && data">
+
+    <!-- Fallback für alte Anträge ohne Snapshot -->
+    <div *ngIf="!data.formularSnapshot || !data.formularAntworten" class="warning">
+      Für diesen Antrag ist noch kein Formular-Snapshot vorhanden (Altantrag).
+    </div>
+
+    <div *ngIf="data.formularSnapshot" class="meta-card">
+      <h2>{{ data.formularSnapshot.titel }}</h2>
+      <p class="muted">{{ data.formularSnapshot.beschreibung }}</p>
+
+      <div class="meta-grid">
+        <div><strong>Antrag-ID:</strong> {{ data.antragId }}</div>
+        <div><strong>Status:</strong> {{ data.status }}</div>
+        <div><strong>Antragsteller:</strong> {{ data.antragstellerName }}</div>
+        <div><strong>Kategorie:</strong> {{ data.formularSnapshot.kategorie }}</div>
+        <div *ngIf="data.formularSnapshot.version">
+          <strong>Formular-Version:</strong> {{ data.formularSnapshot.version }}
+        </div>
+        <div>
+          <strong>Eingereicht:</strong> {{ data.eingereichtAm | date:'dd.MM.yyyy' }}
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="data.formularSnapshot" class="fields-card">
+      <h3>Felder & Antworten</h3>
+
+      <div *ngFor="let feld of data.formularSnapshot.felder" class="field-row">
+        <div class="field-label">
+          <div class="label-line">
+            {{ feld.label }}
+            <span *ngIf="feld.pflichtfeld" class="required">*</span>
+          </div>
+
+          <div *ngIf="feld.oauthAutoFill && feld.oauthFieldMapping" class="oauth-hint">
+            OAuth Mapping: {{ feld.oauthFieldMapping }}
+          </div>
+
+          <div *ngIf="feld.placeholder" class="muted small">
+            Platzhalter: {{ feld.placeholder }}
+          </div>
+        </div>
+
+        <div class="field-value">
+          <ng-container *ngIf="valueForField(feld) as v; else empty">
+            {{ displayValue(feld, v) }}
+          </ng-container>
+          <ng-template #empty>—</ng-template>
+        </div>
+      </div>
+      <!-- NACHRICHTEN -->
+      <div class="section">
+        <h3>Kommunikation</h3>
+
+        <div class="message" *ngFor="let n of nachrichten">
+          <div class="meta">
+            <strong>{{ n.gesendetVon.name }}</strong>
+            <span>{{ n.gesendetAm | date:'dd.MM.yyyy HH:mm' }}</span>
+          </div>
+          <div class="text">{{ n.inhalt }}</div>
+        </div>
+
+        <textarea [(ngModel)]="messageText"
+                  placeholder="Nachricht an Antragsteller schreiben...">
+  </textarea>
+
+        <button (click)="sendNachricht(data!.antragId)">Senden</button>
+      </div>
+
+      <!-- DOKUMENTE -->
+      <div class="section">
+        <h3>Dokumente</h3>
+
+        <div class="document" *ngFor="let d of dokumente">
+          <span>{{ d.filename }}</span>
+          <small>{{ d.uploadedBy.name }} · {{ d.uploadedAt | date }}</small>
+          <a [href]="downloadUrl(data!.antragId, d.id)">Download</a>
+        </div>
+        <input type="file" (change)="onFileSelected($event)">
+        <span *ngIf="uploading">Upload läuft…</span>
+      </div>
+
+    </div>
+
+  </ng-container>
+</div>

@@ -6,7 +6,7 @@
       Status:
       <select [(ngModel)]="filter.status">
         <option value="">Alle</option>
-        <option *ngFor="let s of statusOptions" [value]="s">{{s}}</option>
+        <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
       </select>
     </label>
     <label>
@@ -18,11 +18,11 @@
     </label>
     <label>
       Von:
-      <input type = date [(ngModel)]="filter.from">
+      <input type=date [(ngModel)]="filter.from">
     </label>
     <label>
       Bis:
-      <input type = "date" [(ngModel)]="filter.to">
+      <input type="date" [(ngModel)]="filter.to">
     </label>
     <button (click)="applyFilter()">Filtern</button>
     <button (click)="resetFilter()">Zurücksetzten</button>
@@ -52,6 +52,16 @@
       <div *ngIf="antrag.status === 'ABGELEHNT' && antrag.ablehnungsgrund" class="ablehnungsgrund">
         <strong>Ablehnungsgrund:</strong>
         <p>{{ antrag.ablehnungsgrund }}</p>
+      </div>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="details-button"
+          (click)="openDetails(antrag.id)"
+        >
+          📄 Formular ansehen
+        </button>
       </div>
     </div>
   </div>

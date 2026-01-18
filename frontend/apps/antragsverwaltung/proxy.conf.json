@@ -1,8 +1,28 @@
 {
+  "/api/antraege-verwaltung/*/nachrichten": {
+    "target": "http://localhost:8082",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/foerderantraege/*/nachrichten": {
+    "target": "http://localhost:8082",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/antraege-verwaltung/*/dokumente": {
+    "target": "http://localhost:8082",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/foerderantraege/*/dokumente": {
+    "target": "http://localhost:8082",
+    "secure": false,
+    "changeOrigin": true
+  },
+
   "/api": {
     "target": "http://localhost:8084",
     "secure": false,
-    "changeOrigin": true,
-    "logLevel": "debug"
+    "changeOrigin": true
   }
 }
