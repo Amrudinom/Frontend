@@ -9,12 +9,11 @@ export interface Dokument {
   filename: string;
   fileSize: number;
   contentType: string;
-  uploadedBy: {
-    id: number;
-    name: string;
-  };
+  uploadedById?: number;
+  uploadedByName?: string;
   uploadedAt: string;
 }
+
 
 @Injectable({
   providedIn: 'root'

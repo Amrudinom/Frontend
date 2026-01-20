@@ -3,8 +3,15 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '@auth0/auth0-angular';
-import { AntragFormularViewDto, Nachricht, Dokument } from './application-detail.models';
-import { FeldTyp, FormularFeld } from '../../../../../formularserver/src/app/components/models/form.models'
+import {
+  AntragFormularViewDto,
+  Nachricht,
+  Dokument,
+} from './application-detail.models';
+import {
+  FeldTyp,
+  FormularFeld,
+} from '../../../../../formularserver/src/app/components/models/form.models';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -29,6 +36,19 @@ export class ApplicationDetailComponent implements OnInit {
   dokumente: Dokument[] = [];
   messageText = '';
   uploading = false;
+
+  // Status-Update UI
+  statusOptions = [
+    { value: 'IN_BEARBEITUNG', label: 'In Bearbeitung' },
+    { value: 'GENEHMIGT', label: 'Genehmigt' },
+    { value: 'ABGELEHNT', label: 'Abgelehnt' },
+  ] as const;
+
+  selectedStatus: string | null = null;
+  ablehnungsgrund = '';
+  savingStatus = false;
+  statusSuccess: string | null = null;
+
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -73,6 +93,10 @@ export class ApplicationDetailComponent implements OnInit {
                   );
                 }
                 this.data = res;
+
+                this.selectedStatus = res.status ?? null;
+                this.ablehnungsgrund = res.ablehnungsgrund ?? '';
+
                 this.loading = false;
               },
               error: (err) => {
@@ -135,54 +159,76 @@ export class ApplicationDetailComponent implements OnInit {
   }
 
   loadNachrichten(antragId: number) {
-    this.auth.getAccessTokenSilently({
-      authorizationParams: { audience: 'https://foerderportal-api', scope: 'openid profile email' },
-    }).subscribe({
-      next: (token) => {
-        this.http.get<Nachricht[]>(`/api/foerderantraege/${antragId}/nachrichten`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }).subscribe({
-          next: (n) => (this.nachrichten = n),
-          error: (err) => console.error('Nachrichten laden fehlgeschlagen', err),
-        });
-      },
-      error: (err) => console.error('Token holen fehlgeschlagen', err),
-    });
+    this.auth
+      .getAccessTokenSilently({
+        authorizationParams: {
+          audience: 'https://foerderportal-api',
+          scope: 'openid profile email',
+        },
+      })
+      .subscribe({
+        next: (token) => {
+          this.http
+            .get<Nachricht[]>(`/api/foerderantraege/${antragId}/nachrichten`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            .subscribe({
+              next: (n) => (this.nachrichten = n),
+              error: (err) =>
+                console.error('Nachrichten laden fehlgeschlagen', err),
+            });
+        },
+        error: (err) => console.error('Token holen fehlgeschlagen', err),
+      });
   }
-
 
   sendNachricht(antragId: number) {
     const text = this.messageText.trim();
     if (!text) return;
 
-    this.auth.getAccessTokenSilently({
-      authorizationParams: { audience: 'https://foerderportal-api', scope: 'openid profile email' },
-    }).subscribe({
-      next: (token) => {
-        this.http.post(`/api/foerderantraege/${antragId}/nachrichten`,
-          { inhalt: text },
-          { headers: { Authorization: `Bearer ${token}` } }
-        ).subscribe({
-          next: () => {
-            this.messageText = '';
-            this.loadNachrichten(antragId);
-          },
-          error: (err) => console.error('Nachricht senden fehlgeschlagen', err),
-        });
-      },
-      error: (err) => console.error('Token holen fehlgeschlagen', err),
-    });
+    this.auth
+      .getAccessTokenSilently({
+        authorizationParams: {
+          audience: 'https://foerderportal-api',
+          scope: 'openid profile email',
+        },
+      })
+      .subscribe({
+        next: (token) => {
+          this.http
+            .post(
+              `/api/foerderantraege/${antragId}/nachrichten`,
+              { inhalt: text },
+              { headers: { Authorization: `Bearer ${token}` } }
+            )
+            .subscribe({
+              next: () => {
+                this.messageText = '';
+                this.loadNachrichten(antragId);
+              },
+              error: (err) =>
+                console.error('Nachricht senden fehlgeschlagen', err),
+            });
+        },
+        error: (err) => console.error('Token holen fehlgeschlagen', err),
+      });
   }
 
-
   loadDokumente(antragId: number) {
-    this.auth.getAccessTokenSilently({
-      authorizationParams: { audience: 'https://foerderportal-api', scope: 'openid profile email' },
-    }).subscribe(token => {
-      this.http.get<Dokument[]>(`/api/foerderantraege/${antragId}/dokumente`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).subscribe(d => this.dokumente = d);
-    });
+    this.auth
+      .getAccessTokenSilently({
+        authorizationParams: {
+          audience: 'https://foerderportal-api',
+          scope: 'openid profile email',
+        },
+      })
+      .subscribe((token) => {
+        this.http
+          .get<Dokument[]>(`/api/foerderantraege/${antragId}/dokumente`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          .subscribe((d) => (this.dokumente = d));
+      });
   }
 
   uploadDokument(antragId: number, file: File) {
@@ -190,22 +236,135 @@ export class ApplicationDetailComponent implements OnInit {
     form.append('file', file);
     this.uploading = true;
 
-    this.auth.getAccessTokenSilently({
-      authorizationParams: { audience: 'https://foerderportal-api', scope: 'openid profile email' },
-    }).subscribe(token => {
-      this.http.post(`/api/foerderantraege/${antragId}/dokumente`, form, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).subscribe(() => {
-        this.uploading = false;
-        this.loadDokumente(antragId);
-      }, () => this.uploading = false);
-    });
+    this.auth
+      .getAccessTokenSilently({
+        authorizationParams: {
+          audience: 'https://foerderportal-api',
+          scope: 'openid profile email',
+        },
+      })
+      .subscribe((token) => {
+        this.http
+          .post(`/api/foerderantraege/${antragId}/dokumente`, form, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          .subscribe(
+            () => {
+              this.uploading = false;
+              this.loadDokumente(antragId);
+            },
+            () => (this.uploading = false)
+          );
+      });
+  }
+
+  downloadDokument(antragId: number, dokumentId: number) {
+    this.auth
+      .getAccessTokenSilently({
+        authorizationParams: {
+          audience: 'https://foerderportal-api',
+          scope: 'openid profile email',
+        },
+      })
+      .subscribe({
+        next: (token) => {
+          const url = `/api/antraege-verwaltung/${antragId}/dokumente/${dokumentId}/download`;
+
+          fetch(url, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then(async (r) => {
+              if (!r.ok)
+                throw new Error(`Download fehlgeschlagen (${r.status})`);
+
+              // Dateiname aus Header ziehen (optional)
+              const cd = r.headers.get('content-disposition') ?? '';
+              const filename =
+                cd.match(/filename\*?=(?:UTF-8''|")?([^\";]+)"?/i)?.[1] ??
+                'download';
+
+              const blob = await r.blob();
+              return { blob, filename: decodeURIComponent(filename) };
+            })
+            .then(({ blob, filename }) => {
+              const blobUrl = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = blobUrl;
+              a.download = filename;
+              a.click();
+              window.URL.revokeObjectURL(blobUrl);
+            })
+            .catch((err) => {
+              console.error(err);
+              alert(err.message ?? 'Download fehlgeschlagen');
+            });
+        },
+        error: (err) => {
+          console.error('Token holen fehlgeschlagen', err);
+          alert('Token holen fehlgeschlagen');
+        },
+      });
+  }
+
+  saveStatus(antragId: number) {
+    if (!this.selectedStatus) return;
+
+    // Wenn abgelehnt: Grund zwingend (optional – je nach eurer Anforderung)
+    if (this.selectedStatus === 'ABGELEHNT' && !this.ablehnungsgrund.trim()) {
+      this.error = 'Bitte einen Ablehnungsgrund angeben.';
+      return;
+    }
+
+    this.savingStatus = true;
+    this.error = null;
+    this.statusSuccess = null;
+
+    this.auth
+      .getAccessTokenSilently({
+        authorizationParams: {
+          audience: 'https://foerderportal-api',
+          scope: 'openid profile email',
+        },
+      })
+      .subscribe({
+        next: (token) => {
+          this.http
+            .patch<any>(
+              `/api/antraege-verwaltung/${antragId}/status`,
+              {
+                status: this.selectedStatus,
+                grund: this.selectedStatus === 'ABGELEHNT' ? this.ablehnungsgrund : null,
+              },
+              { headers: { Authorization: `Bearer ${token}` } }
+            )
+            .subscribe({
+              next: (updated) => {
+                // Falls Backend den ganzen Antrag zurückgibt
+                if (this.data) {
+                  this.data.status = updated.status ?? this.selectedStatus!;
+                  // optional, wenn vorhanden:
+                  this.data.ablehnungsgrund = updated.ablehnungsgrund ?? (this.selectedStatus === 'ABGELEHNT' ? this.ablehnungsgrund : null);
+                }
+
+                this.statusSuccess = 'Status wurde gespeichert.';
+                this.savingStatus = false;
+              },
+              error: (err) => {
+                this.error =
+                  'Status speichern fehlgeschlagen: ' + (err?.message || 'Unbekannt');
+                this.savingStatus = false;
+              },
+            });
+        },
+        error: (err) => {
+          this.error =
+            'Fehler beim Token holen: ' + (err?.message || 'Unbekannt');
+          this.savingStatus = false;
+        },
+      });
   }
 
 
-  downloadUrl(antragId: number, dokumentId: number) {
-    return `/api/antraege-verwaltung/${antragId}/dokumente/${dokumentId}/download`;
-  }
   onFileSelected(event: Event) {
     if (!this.data) return;
 
@@ -220,5 +379,4 @@ export class ApplicationDetailComponent implements OnInit {
     // @ts-ignore
     input.value = '';
   }
-
 }

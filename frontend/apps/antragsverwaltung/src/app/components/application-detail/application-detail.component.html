@@ -29,6 +29,35 @@
           <strong>Eingereicht:</strong> {{ data.eingereichtAm | date:'dd.MM.yyyy' }}
         </div>
       </div>
+      <div class="status-editor">
+        <h3>Status ändern</h3>
+
+        <div class="row">
+          <label for="status">Neuer Status</label>
+          <select id="status" [(ngModel)]="selectedStatus">
+            <option [ngValue]="null" disabled>Bitte wählen…</option>
+            <option *ngFor="let s of statusOptions" [value]="s.value">
+              {{ s.label }}
+            </option>
+          </select>
+        </div>
+
+        <div *ngIf="data.status === 'ABGELEHNT' && data.ablehnungsgrund">
+          <strong>Ablehnungsgrund:</strong> {{ data.ablehnungsgrund }}
+        </div>
+
+
+        <button
+          type="button"
+          (click)="saveStatus(data!.antragId)"
+          [disabled]="savingStatus || !selectedStatus"
+        >
+          {{ savingStatus ? 'Speichern…' : 'Status speichern' }}
+        </button>
+
+        <div class="success" *ngIf="statusSuccess">{{ statusSuccess }}</div>
+      </div>
+
     </div>
 
     <div *ngIf="data.formularSnapshot" class="fields-card">
@@ -82,8 +111,11 @@
 
         <div class="document" *ngFor="let d of dokumente">
           <span>{{ d.filename }}</span>
-          <small>{{ d.uploadedBy.name }} · {{ d.uploadedAt | date }}</small>
-          <a [href]="downloadUrl(data!.antragId, d.id)">Download</a>
+          <small>{{ d.uploadedBy?.name ?? 'Unbekannt' }} · {{ d.uploadedAt | date }}</small>
+          <button type="button" (click)="downloadDokument(data!.antragId, d.id)">
+            Download
+          </button>
+
         </div>
         <input type="file" (change)="onFileSelected($event)">
         <span *ngIf="uploading">Upload läuft…</span>

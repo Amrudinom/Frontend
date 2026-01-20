@@ -2,6 +2,7 @@ import { FormularFeld } from '../../../../../formularserver/src/app/components/m
 import { AntragStatus } from '@frontend/core';
 
 export interface AntragFormularViewDto {
+  ablehnungsgrund: string;
   antragId: number;
   status: AntragStatus;
   eingereichtAm: string; // ISO

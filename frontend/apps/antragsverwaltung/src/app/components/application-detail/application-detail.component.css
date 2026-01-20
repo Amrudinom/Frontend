@@ -19,3 +19,27 @@
 
 .oauth-hint { margin-top: .25rem; font-size: .8rem; color: #3498db; font-weight: 500; }
 .field-value { white-space: pre-wrap; }
+.status-editor {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.status-editor .row {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.status-editor select,
+.status-editor textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.success {
+  margin-top: 10px;
+  color: #0a7a2f;
+}
