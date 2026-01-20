@@ -28,6 +28,8 @@ export interface Foerderantrag {
   ablehnungsgrund?: string;
   createdAt: Date;
   updatedAt: Date;
+  formularId?: number;
+  formularAntworten?: { [key: string]: any };
 }
 
 export enum AntragStatus {
@@ -38,7 +40,6 @@ export enum AntragStatus {
   ZURUECKGEZOGEN = 'ZURUECKGEZOGEN'
 }
 
-// DTOs for API requests
 export interface CreateFoerderantragRequest {
   titel: string;
   beschreibung: string;
@@ -54,20 +55,20 @@ export interface UpdateFoerderantragRequest {
 export interface AblehnenRequest {
   grund: string;
 }
+
 export interface FoerderantragDetailDto {
   id: number;
   titel: string;
   beschreibung: string;
   betrag: number;
   status: AntragStatus;
-
   eingereichtAm: string;
   bearbeitetAm?: string;
   ablehnungsgrund?: string;
-
   antragstellerId: number;
   antragstellerName: string;
-
   bearbeiterId?: number;
   bearbeiterName?: string;
+  formularId?: number;
+  formularAntworten?: { [key: string]: any };
 }
