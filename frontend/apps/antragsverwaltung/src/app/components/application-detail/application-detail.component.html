@@ -1,5 +1,5 @@
 <div class="container">
-  <a routerLink="/erhaltene-antraege" class="back-link">← Zurück zur Übersicht</a>
+  <a routerLink="/antraege" class="back-link">← Zurück zur Übersicht</a>
 
   <h1>Übermitteltes Formular</h1>
 
@@ -41,12 +41,16 @@
             </option>
           </select>
         </div>
-
-        <div *ngIf="data.status === 'ABGELEHNT' && data.ablehnungsgrund">
-          <strong>Ablehnungsgrund:</strong> {{ data.ablehnungsgrund }}
+        <div class="reject-reason" *ngIf="selectedStatus === 'ABGELEHNT'">
+          <label for="grund">Ablehnungsgrund</label>
+          <textarea
+            id="grund"
+            rows="4"
+            [(ngModel)]="ablehnungsgrund"
+            placeholder="Bitte den Ablehnungsgrund angeben..."
+          ></textarea>
+          <small class="hint">Dieser Text wird dem Antragsteller per E-Mail zugeschickt.</small>
         </div>
-
-
         <button
           type="button"
           (click)="saveStatus(data!.antragId)"
@@ -107,19 +111,50 @@
 
       <!-- DOKUMENTE -->
       <div class="section">
-        <h3>Dokumente</h3>
+        <div class="section-header">
+          <h3>Dokumente</h3>
 
-        <div class="document" *ngFor="let d of dokumente">
-          <span>{{ d.filename }}</span>
-          <small>{{ d.uploadedBy?.name ?? 'Unbekannt' }} · {{ d.uploadedAt | date }}</small>
-          <button type="button" (click)="downloadDokument(data!.antragId, d.id)">
-            Download
-          </button>
-
+          <label class="upload-btn">
+            Datei auswählen
+            <input type="file" (change)="onFileSelected($event)" hidden>
+          </label>
         </div>
-        <input type="file" (change)="onFileSelected($event)">
-        <span *ngIf="uploading">Upload läuft…</span>
+
+        <div *ngIf="uploading" class="muted small">Upload läuft…</div>
+
+        <div *ngIf="dokumente.length === 0" class="muted">
+          Noch keine Dokumente vorhanden.
+        </div>
+
+        <div class="doc-list" *ngIf="dokumente.length > 0">
+          <div class="doc-row" *ngFor="let d of dokumente">
+            <div class="doc-icon">📄</div>
+
+            <div class="doc-info">
+              <div class="doc-name">{{ d.filename }}</div>
+              <div class="doc-meta">
+                {{ d.uploadedBy?.name ?? 'Unbekannt' }}
+                · {{ d.uploadedAt | date:'dd.MM.yyyy' }}
+                <span *ngIf="d.fileSize">· {{ d.fileSize }} bytes</span>
+              </div>
+            </div>
+
+            <div class="doc-actions">
+              <button type="button" class="btn secondary"
+                      (click)="downloadDokument(data!.antragId, d.id)">
+                Download
+              </button>
+
+              <button type="button" class="btn danger"
+                      (click)="deleteDokument(data!.antragId, d.id)"
+                      [disabled]="deletingDocId === d.id">
+                {{ deletingDocId === d.id ? 'Lösche…' : 'Löschen' }}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+
 
     </div>
 

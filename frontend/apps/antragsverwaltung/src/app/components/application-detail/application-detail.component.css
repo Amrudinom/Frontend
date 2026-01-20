@@ -43,3 +43,103 @@
   margin-top: 10px;
   color: #0a7a2f;
 }
+.reject-reason {
+  margin-top: 12px;
+}
+
+.reject-reason textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.hint {
+  display: block;
+  margin-top: 6px;
+  color: #666;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.doc-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.doc-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.doc-icon {
+  font-size: 18px;
+  line-height: 1;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid #eee;
+}
+
+.doc-name {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.doc-meta {
+  margin-top: 4px;
+  color: #666;
+  font-size: 12px;
+}
+
+.doc-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.btn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.btn.secondary {
+  background: #f6f6f6;
+  border-color: #e5e5e5;
+}
+
+.btn.danger {
+  background: #fff;
+  border-color: #ffcccc;
+  color: #b00020;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

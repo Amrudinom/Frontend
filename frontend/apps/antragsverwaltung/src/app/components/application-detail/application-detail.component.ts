@@ -49,7 +49,6 @@ export class ApplicationDetailComponent implements OnInit {
   savingStatus = false;
   statusSuccess: string | null = null;
 
-
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (!Number.isFinite(id)) {
@@ -306,6 +305,48 @@ export class ApplicationDetailComponent implements OnInit {
       });
   }
 
+  deletingDocId: number | null = null;
+
+  deleteDokument(antragId: number, dokumentId: number) {
+    if (!confirm('Dokument wirklich löschen?')) return;
+
+    this.deletingDocId = dokumentId;
+
+    this.auth
+      .getAccessTokenSilently({
+        authorizationParams: {
+          audience: 'https://foerderportal-api',
+          scope: 'openid profile email',
+        },
+      })
+      .subscribe({
+        next: (token) => {
+          this.http
+            .delete(
+              `/api/foerderantraege/${antragId}/dokumente/${dokumentId}/delete`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            )
+
+            .subscribe({
+              next: () => {
+                this.deletingDocId = null;
+                this.loadDokumente(antragId);
+              },
+              error: (err) => {
+                console.error('Dokument löschen fehlgeschlagen', err);
+                this.deletingDocId = null;
+                alert('Dokument löschen fehlgeschlagen');
+              },
+            });
+        },
+        error: (err) => {
+          console.error('Token holen fehlgeschlagen', err);
+          this.deletingDocId = null;
+          alert('Token holen fehlgeschlagen');
+        },
+      });
+  }
+
   saveStatus(antragId: number) {
     if (!this.selectedStatus) return;
 
@@ -333,7 +374,10 @@ export class ApplicationDetailComponent implements OnInit {
               `/api/antraege-verwaltung/${antragId}/status`,
               {
                 status: this.selectedStatus,
-                grund: this.selectedStatus === 'ABGELEHNT' ? this.ablehnungsgrund : null,
+                grund:
+                  this.selectedStatus === 'ABGELEHNT'
+                    ? this.ablehnungsgrund
+                    : null,
               },
               { headers: { Authorization: `Bearer ${token}` } }
             )
@@ -343,7 +387,11 @@ export class ApplicationDetailComponent implements OnInit {
                 if (this.data) {
                   this.data.status = updated.status ?? this.selectedStatus!;
                   // optional, wenn vorhanden:
-                  this.data.ablehnungsgrund = updated.ablehnungsgrund ?? (this.selectedStatus === 'ABGELEHNT' ? this.ablehnungsgrund : null);
+                  this.data.ablehnungsgrund =
+                    updated.ablehnungsgrund ??
+                    (this.selectedStatus === 'ABGELEHNT'
+                      ? this.ablehnungsgrund
+                      : null);
                 }
 
                 this.statusSuccess = 'Status wurde gespeichert.';
@@ -351,7 +399,8 @@ export class ApplicationDetailComponent implements OnInit {
               },
               error: (err) => {
                 this.error =
-                  'Status speichern fehlgeschlagen: ' + (err?.message || 'Unbekannt');
+                  'Status speichern fehlgeschlagen: ' +
+                  (err?.message || 'Unbekannt');
                 this.savingStatus = false;
               },
             });
@@ -363,7 +412,6 @@ export class ApplicationDetailComponent implements OnInit {
         },
       });
   }
-
 
   onFileSelected(event: Event) {
     if (!this.data) return;
@@ -378,5 +426,11 @@ export class ApplicationDetailComponent implements OnInit {
     // optional: input reset (damit derselbe File erneut gewählt werden kann)
     // @ts-ignore
     input.value = '';
+  }
+
+  onStatusChange() {
+    if (this.selectedStatus !== 'ABGELEHNT') {
+      this.ablehnungsgrund = '';
+    }
   }
 }
