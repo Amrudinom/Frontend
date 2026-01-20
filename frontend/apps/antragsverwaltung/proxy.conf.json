@@ -1,8 +1,17 @@
 {
-  "/api": {
+  "/api/antraege-verwaltung": {
     "target": "http://localhost:8084",
     "secure": false,
-    "changeOrigin": true,
-    "logLevel": "debug"
+    "changeOrigin": true
+  },
+  "/api/foerderantraege": {
+    "target": "http://localhost:8084",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/users-verwaltung": {
+    "target": "http://localhost:8084",
+    "secure": false,
+    "changeOrigin": true
   }
 }

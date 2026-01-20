@@ -54,3 +54,20 @@ export interface UpdateFoerderantragRequest {
 export interface AblehnenRequest {
   grund: string;
 }
+export interface FoerderantragDetailDto {
+  id: number;
+  titel: string;
+  beschreibung: string;
+  betrag: number;
+  status: AntragStatus;
+
+  eingereichtAm: string;
+  bearbeitetAm?: string;
+  ablehnungsgrund?: string;
+
+  antragstellerId: number;
+  antragstellerName: string;
+
+  bearbeiterId?: number;
+  bearbeiterName?: string;
+}
