@@ -2,28 +2,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Foerderantrag, FoerderantragDetailDto } from '@frontend/core';
+import { FoerderantragDetailDto, FormularFeld } from '@frontend/core';
 import { NachrichtService, Nachricht } from '../services/nachricht.service';
 import { DokumentService, Dokument } from '../services/dokument.service';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '@auth0/auth0-angular';
-
-interface Formularfeld {
-  id: number;
-  feldName: string;
-  label: string;
-  feldTyp: string;
-  pflichtfeld: boolean;
-  anzeigeReihenfolge: number;
-}
-
-interface Formular {
-  id: number;
-  titel: string;
-  beschreibung: string;
-  kategorie: string;
-  felder: Formularfeld[];
-}
 
 @Component({
   selector: 'app-antrag-detail',
@@ -34,11 +17,10 @@ interface Formular {
       <button (click)="goBack()" class="back-btn">← Zurück zur Übersicht</button>
 
       <div *ngIf="loading" class="loading-container">
-        <div class="spinner"></div>
-        <p>Lade Antragsdaten...</p>
+        <div class="loading">Lade Antrag...</div>
       </div>
 
-      <div *ngIf="!loading && antrag" class="antrag-content">
+      <div *ngIf="antrag && !loading">
         <div class="antrag-header">
           <div class="header-top">
             <h1>{{ antrag.titel }}</h1>
@@ -47,73 +29,66 @@ interface Formular {
             </span>
           </div>
           <p class="beschreibung">{{ antrag.beschreibung }}</p>
-          <div class="meta-info">
-            <div class="meta-item">
-              <span class="meta-label">Betrag:</span>
-              <span class="meta-value betrag">{{ antrag.betrag | currency: 'EUR' }}</span>
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="label">Betrag</span>
+              <span class="value">{{ antrag.betrag | currency: 'EUR' }}</span>
             </div>
-            <div class="meta-item">
-              <span class="meta-label">Eingereicht am:</span>
-              <span class="meta-value">{{ antrag.eingereichtAm | date: 'dd.MM.yyyy HH:mm' }}</span>
+            <div class="detail-item">
+              <span class="label">Eingereicht am</span>
+              <span class="value">{{ antrag.eingereichtAm | date: 'dd.MM.yyyy HH:mm' }}</span>
             </div>
-            <div class="meta-item" *ngIf="antrag.bearbeitetAm">
-              <span class="meta-label">Zuletzt bearbeitet:</span>
-              <span class="meta-value">{{ antrag.bearbeitetAm | date: 'dd.MM.yyyy HH:mm' }}</span>
+            <div class="detail-item" *ngIf="antrag.bearbeitetAm">
+              <span class="label">Zuletzt bearbeitet</span>
+              <span class="value">{{ antrag.bearbeitetAm | date: 'dd.MM.yyyy HH:mm' }}</span>
             </div>
+            <div class="detail-item" *ngIf="antrag.bearbeiterName">
+              <span class="label">Bearbeiter</span>
+              <span class="value">{{ antrag.bearbeiterName }}</span>
+            </div>
+          </div>
+
+          <div *ngIf="antrag.status === 'ABGELEHNT' && antrag.ablehnungsgrund" class="ablehnungsgrund">
+            <strong>Ablehnungsgrund:</strong>
+            <p>{{ antrag.ablehnungsgrund }}</p>
           </div>
         </div>
 
-        <div *ngIf="antrag.status === 'ABGELEHNT' && antrag.ablehnungsgrund" class="ablehnungsgrund-box">
-          <h3>⚠️ Ablehnungsgrund</h3>
-          <p>{{ antrag.ablehnungsgrund }}</p>
-        </div>
+        <div class="section formular-section" *ngIf="hasFormularData()">
+          <h2>Eingereichte Formulardaten</h2>
 
-        <div class="section formular-section">
-          <h2>📋 Eingereichte Formulardaten</h2>
-
-          <div *ngIf="loadingFormular" class="loading">
-            Lade Formulardaten...
+          <div class="formular-info" *ngIf="antrag.formularSnapshot?.titel">
+            <p class="formular-titel">Formular: <strong>{{ antrag.formularSnapshot.titel }}</strong></p>
+            <p class="formular-version" *ngIf="antrag.formularVersion">Version {{ antrag.formularVersion }}</p>
           </div>
 
-          <div *ngIf="!loadingFormular && formular && antrag.formularAntworten" class="formular-antworten">
-            <div class="formular-info">
-              <span class="formular-titel">Formular: {{ formular.titel }}</span>
-              <span class="formular-kategorie">{{ formular.kategorie }}</span>
+          <div class="formular-felder">
+            <div *ngFor="let feld of getFormularFelder()" class="formular-feld">
+              <div class="feld-label">
+                {{ feld.label }}
+                <span *ngIf="feld.pflichtfeld" class="pflichtfeld">*</span>
+              </div>
+              <div class="feld-wert">
+                {{ getAntwortForFeld(feld) || '—' }}
+              </div>
             </div>
 
-            <div class="antworten-liste">
-              <div *ngFor="let feld of formular.felder" class="antwort-item">
-                <div class="antwort-label">
-                  {{ feld.label || feld.feldName }}
-                  <span *ngIf="feld.pflichtfeld" class="pflicht">*</span>
-                </div>
-                <div class="antwort-wert" [ngSwitch]="feld.feldTyp">
-                  <span *ngSwitchCase="'CHECKBOX'">
-                    {{ getAntwort(feld.feldName) === true || getAntwort(feld.feldName) === 'true' ? '✓ Ja' : '✗ Nein' }}
-                  </span>
-                  <span *ngSwitchCase="'DATUM'">
-                    {{ getAntwort(feld.feldName) | date: 'dd.MM.yyyy' }}
-                  </span>
-                  <span *ngSwitchCase="'EMAIL'">
-                    <a [href]="'mailto:' + getAntwort(feld.feldName)">{{ getAntwort(feld.feldName) }}</a>
-                  </span>
-                  <span *ngSwitchDefault>
-                    {{ getAntwort(feld.feldName) || '—' }}
-                  </span>
-                </div>
+            <div *ngIf="!hasFormularFelder() && antrag.formularAntworten">
+              <div *ngFor="let key of getAntwortKeys()" class="formular-feld">
+                <div class="feld-label">{{ formatFeldKey(key) }}</div>
+                <div class="feld-wert">{{ antrag.formularAntworten[key] || '—' }}</div>
               </div>
             </div>
           </div>
 
-          <div *ngIf="!loadingFormular && (!formular || !antrag.formularAntworten)" class="no-formular">
-            <p>Keine Formulardaten verfügbar.</p>
-            <p class="hint">Die Formulardaten werden angezeigt, sobald ein Antrag über ein Formular eingereicht wurde.</p>
+          <div *ngIf="!hasFormularFelder() && !antrag.formularAntworten" class="empty-state">
+            Keine Formulardaten verfügbar
           </div>
         </div>
 
         <div class="content-grid">
           <div class="section">
-            <h2>💬 Nachrichten</h2>
+            <h2>Nachrichten</h2>
 
             <div class="nachrichten-liste">
               <div *ngFor="let nachricht of nachrichten" class="nachricht-card">
@@ -125,9 +100,7 @@ interface Formular {
               </div>
 
               <div *ngIf="nachrichten.length === 0 && !loadingNachrichten" class="empty-state">
-                <span class="empty-icon">💬</span>
-                <p>Noch keine Nachrichten vorhanden</p>
-                <p class="hint">Senden Sie eine Nachricht an den Sachbearbeiter</p>
+                Noch keine Nachrichten vorhanden
               </div>
 
               <div *ngIf="loadingNachrichten" class="loading">
@@ -138,7 +111,7 @@ interface Formular {
             <div class="nachricht-form">
               <textarea
                 [(ngModel)]="neueNachricht"
-                placeholder="Ihre Nachricht an den Sachbearbeiter..."
+                placeholder="Nachricht an den Sachbearbeiter schreiben..."
                 rows="3"
                 class="form-control">
               </textarea>
@@ -146,46 +119,42 @@ interface Formular {
                 (click)="sendNachricht()"
                 [disabled]="!neueNachricht.trim() || sendingNachricht"
                 class="btn btn-primary">
-                {{ sendingNachricht ? 'Sende...' : '📤 Nachricht senden' }}
+                {{ sendingNachricht ? 'Sende...' : 'Nachricht senden' }}
               </button>
             </div>
           </div>
 
           <div class="section">
-            <h2>📎 Dokumente</h2>
+            <h2>Dokumente</h2>
 
             <div class="dokumente-liste">
               <div *ngFor="let dok of dokumente" class="dokument-card">
-                <div class="dokument-icon">📄</div>
                 <div class="dokument-info">
                   <strong>{{ dok.filename }}</strong>
                   <div class="dokument-meta">
                     <span class="file-size">{{ formatFileSize(dok.fileSize) }}</span>
-                    <span class="separator">•</span>
                     <span class="upload-date">{{ dok.uploadedAt | date: 'dd.MM.yyyy' }}</span>
                   </div>
-                  <span class="uploader">Hochgeladen von: {{ dok.uploadedByName || 'Unbekannt' }}</span>
+                  <span class="uploader">
+                    Von: {{ dok.uploadedByName || 'Unbekannt' }}
+                  </span>
                 </div>
                 <div class="dokument-actions">
                   <button
                     (click)="downloadDokument(dok.id)"
-                    class="btn btn-sm btn-secondary"
-                    title="Herunterladen">
-                    ⬇️
+                    class="btn btn-sm btn-secondary">
+                    Download
                   </button>
                   <button
                     (click)="deleteDokument(dok.id)"
-                    class="btn btn-sm btn-danger"
-                    title="Löschen">
-                    🗑️
+                    class="btn btn-sm btn-danger">
+                    Löschen
                   </button>
                 </div>
               </div>
 
               <div *ngIf="dokumente.length === 0 && !loadingDokumente" class="empty-state">
-                <span class="empty-icon">📎</span>
-                <p>Keine Dokumente vorhanden</p>
-                <p class="hint">Laden Sie hier zusätzliche Dokumente hoch</p>
+                Keine Dokumente vorhanden
               </div>
 
               <div *ngIf="loadingDokumente" class="loading">
@@ -198,22 +167,18 @@ interface Formular {
                 type="file"
                 (change)="onFileSelected($event)"
                 #fileInput
-                class="file-input"
-                id="file-upload"
+                class="form-control"
                 [disabled]="uploadingDokument">
-              <label for="file-upload" class="file-label">
-                {{ selectedFile ? selectedFile.name : '📁 Datei auswählen...' }}
-              </label>
               <button
                 (click)="uploadDokument()"
                 [disabled]="!selectedFile || uploadingDokument"
                 class="btn btn-primary">
-                {{ uploadingDokument ? 'Lädt...' : '⬆️ Hochladen' }}
+                {{ uploadingDokument ? 'Lädt hoch...' : 'Hochladen' }}
               </button>
             </div>
 
             <div *ngIf="selectedFile" class="selected-file">
-              ✓ Ausgewählt: {{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})
+              Ausgewählt: {{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})
             </div>
           </div>
         </div>
@@ -227,6 +192,13 @@ interface Formular {
       margin: 0 auto;
     }
 
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 300px;
+    }
+
     .back-btn {
       margin-bottom: 1.5rem;
       padding: 0.6rem 1.2rem;
@@ -236,88 +208,64 @@ interface Formular {
       border-radius: 6px;
       cursor: pointer;
       font-size: 1rem;
-      transition: all 0.2s;
+      transition: background 0.2s;
     }
-    .back-btn:hover {
-      background: #545b62;
-      transform: translateX(-3px);
-    }
-
-    .loading-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 4rem;
-      color: #666;
-    }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #007bff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 1rem;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+    .back-btn:hover { background: #545b62; }
 
     .antrag-header {
-      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      background: white;
       padding: 2rem;
       border-radius: 12px;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.07);
-      border: 1px solid #e9ecef;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
+
     .header-top {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 1rem;
       margin-bottom: 1rem;
+      flex-wrap: wrap;
     }
+
     .antrag-header h1 {
       margin: 0;
-      color: #2c3e50;
+      color: #1a1a2e;
       font-size: 1.8rem;
-      font-weight: 600;
+      flex: 1;
     }
+
     .beschreibung {
       color: #666;
       margin-bottom: 1.5rem;
       line-height: 1.6;
       font-size: 1.05rem;
     }
-    .meta-info {
-      display: flex;
-      gap: 2rem;
-      flex-wrap: wrap;
-      padding-top: 1rem;
-      border-top: 1px solid #e9ecef;
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
     }
-    .meta-item {
+
+    .detail-item {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
     }
-    .meta-label {
+
+    .detail-item .label {
       font-size: 0.85rem;
-      color: #6c757d;
+      color: #666;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    .meta-value {
+
+    .detail-item .value {
       font-size: 1.1rem;
-      color: #333;
       font-weight: 500;
-    }
-    .meta-value.betrag {
-      color: #28a745;
-      font-size: 1.3rem;
+      color: #333;
     }
 
     .status-badge {
@@ -331,101 +279,82 @@ interface Formular {
     .status-in_bearbeitung { background: #fff3cd; color: #856404; }
     .status-genehmigt { background: #d4edda; color: #155724; }
     .status-abgelehnt { background: #f8d7da; color: #721c24; }
-    .status-zurueckgezogen { background: #e2e3e5; color: #383d41; }
 
-    .ablehnungsgrund-box {
-      background: linear-gradient(135deg, #fff5f5 0%, #ffe0e0 100%);
-      border: 1px solid #f5c6cb;
-      border-left: 4px solid #dc3545;
+    .ablehnungsgrund {
+      margin-top: 1.5rem;
+      padding: 1rem 1.5rem;
+      background: #fff5f5;
+      border-left: 4px solid #e53e3e;
       border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
     }
-    .ablehnungsgrund-box h3 {
-      margin: 0 0 0.75rem 0;
-      color: #721c24;
-      font-size: 1.1rem;
-    }
-    .ablehnungsgrund-box p {
-      margin: 0;
-      color: #721c24;
-      line-height: 1.6;
+    .ablehnungsgrund p {
+      margin: 0.5rem 0 0 0;
+      color: #742a2a;
     }
 
     .formular-section {
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
+
     .formular-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem;
-      background: #e7f3ff;
-      border-radius: 8px;
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e2e8f0;
     }
+
     .formular-titel {
-      font-weight: 600;
-      color: #004085;
+      margin: 0;
+      font-size: 1.1rem;
+      color: #4a5568;
     }
-    .formular-kategorie {
-      background: #007bff;
-      color: white;
-      padding: 0.25rem 0.75rem;
-      border-radius: 12px;
+
+    .formular-version {
+      margin: 0.25rem 0 0 0;
       font-size: 0.85rem;
+      color: #718096;
     }
-    .antworten-liste {
+
+    .formular-felder {
       display: grid;
-      gap: 0.75rem;
-    }
-    .antwort-item {
-      display: grid;
-      grid-template-columns: 200px 1fr;
       gap: 1rem;
-      padding: 0.75rem 1rem;
-      background: #f8f9fa;
-      border-radius: 6px;
-      align-items: center;
     }
+
+    .formular-feld {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 1rem;
+      padding: 1rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
     @media (max-width: 600px) {
-      .antwort-item {
+      .formular-feld {
         grid-template-columns: 1fr;
-        gap: 0.25rem;
+        gap: 0.5rem;
       }
     }
-    .antwort-label {
+
+    .feld-label {
       font-weight: 500;
-      color: #495057;
+      color: #4a5568;
     }
-    .pflicht {
-      color: #dc3545;
+
+    .pflichtfeld {
+      color: #e53e3e;
       margin-left: 2px;
     }
-    .antwort-wert {
-      color: #212529;
+
+    .feld-wert {
+      color: #1a202c;
       word-break: break-word;
-    }
-    .no-formular {
-      text-align: center;
-      padding: 2rem;
-      background: #f8f9fa;
-      border-radius: 8px;
-      color: #6c757d;
-    }
-    .no-formular p:first-child {
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-    }
-    .hint {
-      font-size: 0.9rem;
-      color: #868e96;
     }
 
     .content-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
+      gap: 2rem;
     }
 
     @media (max-width: 968px) {
@@ -438,20 +367,18 @@ interface Formular {
       background: white;
       padding: 1.5rem;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       display: flex;
       flex-direction: column;
-      border: 1px solid #e9ecef;
     }
     .section h2 {
-      margin: 0 0 1rem 0;
-      font-size: 1.2rem;
-      color: #333;
-      font-weight: 600;
+      margin: 0 0 1.25rem 0;
+      font-size: 1.25rem;
+      color: #1a1a2e;
     }
 
     .nachrichten-liste {
-      max-height: 350px;
+      max-height: 400px;
       overflow-y: auto;
       margin-bottom: 1rem;
       flex: 1;
@@ -461,7 +388,7 @@ interface Formular {
       padding: 1rem;
       margin-bottom: 0.75rem;
       border-radius: 8px;
-      border-left: 3px solid #007bff;
+      border-left: 4px solid #007bff;
     }
     .nachricht-header {
       display: flex;
@@ -471,7 +398,7 @@ interface Formular {
     }
     .datum {
       color: #6c757d;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
     }
     .nachricht-text {
       margin: 0;
@@ -489,26 +416,18 @@ interface Formular {
 
     .dokumente-liste {
       margin-bottom: 1rem;
-      max-height: 350px;
+      max-height: 400px;
       overflow-y: auto;
     }
     .dokument-card {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 1rem;
       padding: 1rem;
-      border: 1px solid #e9ecef;
+      border: 1px solid #e2e8f0;
       border-radius: 8px;
       margin-bottom: 0.75rem;
-      background: #f8f9fa;
-      transition: all 0.2s;
-    }
-    .dokument-card:hover {
-      border-color: #007bff;
-      background: #fff;
-    }
-    .dokument-icon {
-      font-size: 1.5rem;
+      background: #f8fafc;
     }
     .dokument-info {
       flex: 1;
@@ -520,20 +439,12 @@ interface Formular {
     }
     .dokument-meta {
       display: flex;
-      gap: 0.5rem;
+      gap: 1rem;
       margin: 0.25rem 0;
-      align-items: center;
     }
-    .separator {
-      color: #dee2e6;
-    }
-    .file-size, .upload-date {
+    .file-size, .upload-date, .uploader {
       color: #6c757d;
       font-size: 0.85rem;
-    }
-    .uploader {
-      color: #868e96;
-      font-size: 0.8rem;
     }
     .dokument-actions {
       display: flex;
@@ -542,37 +453,18 @@ interface Formular {
 
     .upload-form {
       display: flex;
-      gap: 0.75rem;
+      gap: 0.5rem;
       border-top: 1px solid #dee2e6;
       padding-top: 1rem;
-      align-items: center;
-    }
-    .file-input {
-      display: none;
-    }
-    .file-label {
-      flex: 1;
-      padding: 0.6rem 1rem;
-      background: #f8f9fa;
-      border: 2px dashed #dee2e6;
-      border-radius: 6px;
-      cursor: pointer;
-      text-align: center;
-      color: #6c757d;
-      transition: all 0.2s;
-    }
-    .file-label:hover {
-      border-color: #007bff;
-      color: #007bff;
     }
 
     .selected-file {
-      margin-top: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: #d4edda;
+      margin-top: 0.75rem;
+      padding: 0.75rem;
+      background: #e7f3ff;
       border-radius: 6px;
       font-size: 0.9rem;
-      color: #155724;
+      color: #004085;
     }
 
     .empty-state {
@@ -582,14 +474,6 @@ interface Formular {
       background: #f8f9fa;
       border-radius: 8px;
       border: 2px dashed #dee2e6;
-    }
-    .empty-icon {
-      font-size: 2rem;
-      display: block;
-      margin-bottom: 0.5rem;
-    }
-    .empty-state p {
-      margin: 0.25rem 0;
     }
 
     .loading {
@@ -601,7 +485,7 @@ interface Formular {
     .form-control {
       width: 100%;
       padding: 0.75rem;
-      border: 1px solid #dee2e6;
+      border: 1px solid #ddd;
       border-radius: 6px;
       font-size: 1rem;
       font-family: inherit;
@@ -610,7 +494,6 @@ interface Formular {
     .form-control:focus {
       outline: none;
       border-color: #007bff;
-      box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
     }
     textarea.form-control {
       resize: vertical;
@@ -625,7 +508,6 @@ interface Formular {
       font-weight: 500;
       font-size: 0.95rem;
       transition: all 0.2s;
-      white-space: nowrap;
     }
     .btn-primary {
       background: #007bff;
@@ -633,10 +515,9 @@ interface Formular {
     }
     .btn-primary:hover:not(:disabled) {
       background: #0056b3;
-      transform: translateY(-1px);
     }
     .btn-primary:disabled {
-      background: #94c7ff;
+      background: #ccc;
       cursor: not-allowed;
     }
     .btn-secondary {
@@ -654,8 +535,8 @@ interface Formular {
       background: #c82333;
     }
     .btn-sm {
-      padding: 0.4rem 0.8rem;
-      font-size: 0.9rem;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.85rem;
     }
   `]
 })
@@ -669,7 +550,6 @@ export class AntragDetailComponent implements OnInit {
 
   antragId!: number;
   antrag: FoerderantragDetailDto | null = null;
-  formular: Formular | null = null;
   nachrichten: Nachricht[] = [];
   dokumente: Dokument[] = [];
 
@@ -677,7 +557,6 @@ export class AntragDetailComponent implements OnInit {
   selectedFile: File | null = null;
 
   loading = true;
-  loadingFormular = false;
   loadingNachrichten = false;
   loadingDokumente = false;
   sendingNachricht = false;
@@ -705,9 +584,6 @@ export class AntragDetailComponent implements OnInit {
           next: data => {
             this.antrag = data;
             this.loading = false;
-            if (data.formularId) {
-              this.loadFormular(data.formularId, token);
-            }
           },
           error: err => {
             console.error('Fehler beim Laden des Antrags', err);
@@ -722,25 +598,55 @@ export class AntragDetailComponent implements OnInit {
     });
   }
 
-  loadFormular(formularId: number, token: string) {
-    this.loadingFormular = true;
-    this.http.get<Formular>(`/api/formulare/${formularId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).subscribe({
-      next: data => {
-        this.formular = data;
-        this.loadingFormular = false;
-      },
-      error: err => {
-        console.error('Fehler beim Laden des Formulars', err);
-        this.loadingFormular = false;
-      }
-    });
+  hasFormularData(): boolean {
+    return !!(this.antrag?.formularSnapshot || this.antrag?.formularAntworten);
   }
 
-  getAntwort(feldName: string): any {
-    if (!this.antrag?.formularAntworten) return null;
-    return this.antrag.formularAntworten[feldName];
+  hasFormularFelder(): boolean {
+    return !!(this.antrag?.formularSnapshot?.felder && this.antrag.formularSnapshot.felder.length > 0);
+  }
+
+  getFormularFelder(): FormularFeld[] {
+    if (!this.antrag?.formularSnapshot?.felder) return [];
+    return [...this.antrag.formularSnapshot.felder].sort((a, b) => a.anzeigeReihenfolge - b.anzeigeReihenfolge);
+  }
+
+  getAntwortForFeld(feld: FormularFeld): string {
+    if (!this.antrag?.formularAntworten) return '';
+
+    const possibleKeys = [
+      feld.id.toString(),
+      feld.feldName,
+      `feld_${feld.id}`,
+      feld.label
+    ];
+
+    for (const key of possibleKeys) {
+      if (this.antrag.formularAntworten[key] !== undefined) {
+        const value = this.antrag.formularAntworten[key];
+        if (Array.isArray(value)) {
+          return value.join(', ');
+        }
+        if (typeof value === 'boolean') {
+          return value ? 'Ja' : 'Nein';
+        }
+        return String(value);
+      }
+    }
+    return '';
+  }
+
+  getAntwortKeys(): string[] {
+    if (!this.antrag?.formularAntworten) return [];
+    return Object.keys(this.antrag.formularAntworten);
+  }
+
+  formatFeldKey(key: string): string {
+    return key
+      .replace(/_/g, ' ')
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, str => str.toUpperCase())
+      .trim();
   }
 
   loadNachrichten() {

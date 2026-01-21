@@ -28,8 +28,6 @@ export interface Foerderantrag {
   ablehnungsgrund?: string;
   createdAt: Date;
   updatedAt: Date;
-  formularId?: number;
-  formularAntworten?: { [key: string]: any };
 }
 
 export enum AntragStatus {
@@ -65,10 +63,31 @@ export interface FoerderantragDetailDto {
   eingereichtAm: string;
   bearbeitetAm?: string;
   ablehnungsgrund?: string;
+  formularId?: number;
+  formularVersion?: number;
+  formularSnapshot?: FormularSnapshot;
+  formularAntworten?: { [feldId: string]: any };
   antragstellerId: number;
   antragstellerName: string;
   bearbeiterId?: number;
   bearbeiterName?: string;
-  formularId?: number;
-  formularAntworten?: { [key: string]: any };
+}
+
+export interface FormularSnapshot {
+  id?: number;
+  titel?: string;
+  beschreibung?: string;
+  felder?: FormularFeld[];
+}
+
+export interface FormularFeld {
+  id: number;
+  feldName: string;
+  feldTyp: string;
+  label: string;
+  pflichtfeld: boolean;
+  platzhalter?: string;
+  hilfetext?: string;
+  optionen?: string[];
+  anzeigeReihenfolge: number;
 }
