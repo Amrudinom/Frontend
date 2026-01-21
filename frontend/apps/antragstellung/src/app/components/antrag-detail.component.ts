@@ -58,7 +58,7 @@ import { AuthService } from '@auth0/auth0-angular';
           <h2>Eingereichte Formulardaten</h2>
 
           <div class="formular-info" *ngIf="antrag.formularSnapshot?.titel">
-            <p class="formular-titel">Formular: <strong>{{ antrag.formularSnapshot.titel }}</strong></p>
+            <p class="formular-titel">Formular: <strong>{{ antrag.formularSnapshot?.titel }}</strong></p>
             <p class="formular-version" *ngIf="antrag.formularVersion">Version {{ antrag.formularVersion }}</p>
           </div>
 
