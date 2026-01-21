@@ -34,7 +34,8 @@
   <div *ngIf="error" class="error">{{ error }}</div>
 
   <div *ngIf="!loading && antraege.length > 0" class="antraege-list">
-    <div *ngFor="let antrag of antraege" class="antrag-card">
+    <div *ngFor="let antrag of antraege; trackBy: trackById" class="antrag-card">
+
       <h3>{{ antrag.titel }}</h3>
       <p class="beschreibung">{{ antrag.beschreibung }}</p>
 

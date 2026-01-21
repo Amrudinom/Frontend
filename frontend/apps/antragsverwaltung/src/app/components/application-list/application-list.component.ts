@@ -47,14 +47,10 @@ export class ApplicationListComponent implements OnInit {
   ngOnInit() {
     this.loadAntraege();
     this.loadUsers();
+  }
 
-    this.router.events
-      .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe(() => {
-        if (this.router.url === '/erhaltene-antraege') {
-          this.loadAntraege();
-        }
-      });
+  trackById(_: number, item: Foerderantrag) {
+    return item.id;
   }
 
   loadAntraege() {
@@ -184,8 +180,8 @@ export class ApplicationListComponent implements OnInit {
     };
     return statusMap[status] || status;
   }
+
   openDetails(antragId: number): void {
     this.router.navigate(['/antraege-verwaltung', antragId]);
   }
-
 }
