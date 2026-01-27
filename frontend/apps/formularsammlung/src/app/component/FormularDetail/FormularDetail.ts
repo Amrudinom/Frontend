@@ -1,5 +1,5 @@
 
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -23,6 +23,7 @@ interface FormularFeld{
   label: string;
   pflichtfeld: boolean;
   oauthVorfeld: boolean;
+  oauthAutoFill: boolean;
   anzeigeReihenfolge: number;
   placeholder?: string;
   minValue?: number;
@@ -135,14 +136,15 @@ export class FormularDetailComponent implements OnInit {
     const prefillData: any = {};
 
     this.formular.felder.forEach(feld => {
-      if (feld.oauthVorfeld){
+
+      if (feld.oauthAutoFill){
         const feldNameLower = feld.feldName.toLowerCase();
         const feldTyptLower = feld.feldTyp.toLowerCase();
 
         if(feldNameLower.includes('name' )) {
           prefillData[feld.feldName] = this.userProfile.name || '';
         }
-        else if (feldTyptLower.includes('email' )){
+        else if (feldTyptLower.includes('email' ) || feldTyptLower.includes('e-mail')){
           prefillData[feld.feldName] = this.userProfile.email || '';
         }
       }
@@ -156,26 +158,12 @@ export class FormularDetailComponent implements OnInit {
     this.router.navigate(['/formulare']);
   }
 
-  validationError: string | null = null;
-  successMessage: string | null = null;
-
   /* Speichert ausgefüllte Formulare um einen Antrag zu erstellen */
   antragErstellen(){
     if(this.formularForm.invalid){
-      this.validationError = 'Bitte füllen Sie alle Pflichtfelder aus!';
-
-      Object.keys(this.formularForm.controls).forEach(key => {
-        this.formularForm.get(key)?.markAsTouched();
-      });
-
-      setTimeout(() =>{
-        this.validationError = null;
-      }, 3000);
-
+      alert('Bitte füllen Sie alle Pflichtfelder aus!')
       return;
     }
-    this.validationError = null;
-
 
     const betragFeld = this.formular!.felder.find(f =>{
       const lowerName = f.feldName.toLowerCase();
@@ -204,12 +192,9 @@ export class FormularDetailComponent implements OnInit {
     this.http.post('/api/formulare', antragData).subscribe({
       next: (response) => {
         console.log('Antrag erfolgreich erstellt:', response);
+        alert('Antrag erfolgreich erstellt!')
+        this.router.navigate(['/formulare'])
         this.loading = false;
-
-        this.successMessage = 'Antrag erfolgreich erstellt';
-        setTimeout(() =>{
-          this.router.navigate(['/formulare']);
-          },2000);
       },
       error: (err) => {
         console.error('Fehler beim Erstellen des Antrags:', err);

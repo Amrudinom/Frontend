@@ -99,11 +99,3 @@
   <button (click)="goBack()">Zurück</button>
   <button (click)="antragErstellen()"> Antrag erstellen</button>
 </div>
-
-@if (validationError) {
-  <div class="alert-error">{{validationError}}</div>
-}
-
-@if (successMessage){
-  <div class="alert-success">{{successMessage}}</div>
-}
