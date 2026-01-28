@@ -74,8 +74,8 @@
             <span *ngIf="feld.pflichtfeld" class="required">*</span>
           </div>
 
-          <div *ngIf="feld.oauthAutoFill && feld.oauthFieldMapping" class="oauth-hint">
-            OAuth Mapping: {{ feld.oauthFieldMapping }}
+          <div *ngIf="feld.oauthAutoFill" class="oauth-hint">
+            OAuth: {{ feld.oauthAutoFill }}
           </div>
 
           <div *ngIf="feld.placeholder" class="muted small">

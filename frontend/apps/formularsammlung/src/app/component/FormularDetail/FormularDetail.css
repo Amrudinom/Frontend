@@ -17,3 +17,13 @@ button {
   width: 350px;
   padding: 0.5rem;
 }
+
+input[type="file"] {
+  display: block;
+  width: 350px;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}

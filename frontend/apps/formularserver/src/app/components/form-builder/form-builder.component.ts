@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {FormService} from '../services/form.service';
 import {FormularStatus, Formular} from '../models/form.models';
+import {take} from "rxjs/operators";
 
 @Component({
   selector: 'app-form-builder',

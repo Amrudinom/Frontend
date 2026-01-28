@@ -141,8 +141,8 @@ export class FormularDetailComponent implements OnInit {
         const feldNameLower = feld.feldName.toLowerCase();
         const feldTyptLower = feld.feldTyp.toLowerCase();
 
-        if(feldNameLower.includes('name' )) {
-          prefillData[feld.feldName] = this.userProfile.name || '';
+        if(feldNameLower.includes('name' ) || feldTyptLower.includes('text')) {
+          prefillData[feld.feldName] = this.userProfile.nickname;
         }
         else if (feldTyptLower.includes('email' ) || feldTyptLower.includes('e-mail')){
           prefillData[feld.feldName] = this.userProfile.email || '';

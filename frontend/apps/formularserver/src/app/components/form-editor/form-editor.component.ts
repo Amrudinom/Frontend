@@ -42,14 +42,6 @@ export class FormEditorComponent implements OnInit, OnDestroy {
     { type: FeldTyp.FILE_UPLOAD, label: 'Datei-Upload', icon: 'attach_file', description: 'Datei hochladen' }
   ];
 
-  // OAuth Mapping Optionen
-  oauthMappingOptions = [
-    { value: 'email', label: 'E-Mail-Adresse', description: 'E-Mail des angemeldeten Benutzers' },
-    { value: 'given_name', label: 'Vorname', description: 'Vorname des angemeldeten Benutzers' },
-    { value: 'family_name', label: 'Nachname', description: 'Nachname des angemeldeten Benutzers' },
-    { value: 'name', label: 'Vollständiger Name', description: 'Voller Name des angemeldeten Benutzers' }
-  ];
-
   FeldTyp = FeldTyp;
   FormularStatus = FormularStatus;
 
@@ -69,35 +61,64 @@ export class FormEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.loadFromLocalStorage();
+    // Bei neuen Formularen: LocalStorage für Autosave wird gelöscht
+    if (!this.isEditMode) {
+      localStorage.removeItem('formEditor_autosave_new');
+    }
 
     this.route.params.subscribe(params => {
       if (params['id']) {
         this.isEditMode = true;
         this.formularId = +params['id'];
+        this.localStorageKey = `formEditor_autosave_${this.formularId}`;
         this.ladeFormular(this.formularId);
+
+        // Nur im Edit-Modus Autosave laden
+        this.loadFromLocalStorage();
       } else {
-        // Neues Formular - Standardfeld hinzufügen
+        this.isEditMode = false;
+        this.localStorageKey = 'formEditor_autosave_new';
+
+        // Bei neuem Formular: Leeres Formular setzen
+        this.formularForm.reset({
+          titel: '',
+          beschreibung: '',
+          kategorie: '',
+          status: FormularStatus.DRAFT
+        });
+
+        // Alle bestehenden Felder entfernen
+        while (this.felder.length > 0) {
+          this.felder.removeAt(0);
+        }
+
+        // Ein leeres Textfeld hinzufügen
         setTimeout(() => {
-          if (this.felder.length === 0) {
-            this.neuesFeld();
-          }
+          this.neuesFeld(); // Fügt ein leeres Textfeld hinzu
         }, 100);
       }
     });
 
-    // Automatische Speicherung alle 30 Sekunden
-    this.autoSaveSubscription = interval(30000).subscribe(() => {
-      this.saveToLocalStorage();
-    });
+    // Automatische Speicherung nur für Edit-Modus
+    if (this.isEditMode) {
+      this.autoSaveSubscription = interval(30000).subscribe(() => {
+        this.saveToLocalStorage();
+      });
+    }
 
     // Speichern bei Änderungen
     this.formularForm.valueChanges.subscribe(() => {
       this.lastSaved = new Date();
+      if (this.isEditMode) {
+        this.saveToLocalStorage();
+      }
     });
 
     this.felder.valueChanges.subscribe(() => {
       this.lastSaved = new Date();
+      if (this.isEditMode) {
+        this.saveToLocalStorage();
+      }
     });
   }
 
@@ -274,7 +295,6 @@ export class FormEditorComponent implements OnInit, OnDestroy {
     const feldName = this.generateFieldName(label || feldTyp.toLowerCase());
 
     const oauthAutoFill = feldTyp === FeldTyp.EMAIL || feldTyp === FeldTyp.TEXT;
-    const oauthFieldMapping = feldTyp === FeldTyp.EMAIL ? 'email' : '';
 
     const feldGroup = this.fb.group({
       id: [null], // Keine ID für neue Felder
@@ -285,7 +305,6 @@ export class FormEditorComponent implements OnInit, OnDestroy {
       defaultValue: [''],
       pflichtfeld: [false],
       oauthAutoFill: [oauthAutoFill],
-      oauthFieldMapping: [oauthFieldMapping],
       minLength: [null],
       maxLength: [null],
       regexPattern: [''],
@@ -346,7 +365,6 @@ export class FormEditorComponent implements OnInit, OnDestroy {
       defaultValue: [feld.defaultValue],
       pflichtfeld: [feld.pflichtfeld],
       oauthAutoFill: [feld.oauthAutoFill],
-      oauthFieldMapping: [feld.oauthFieldMapping],
       minLength: [feld.minLength],
       maxLength: [feld.maxLength],
       regexPattern: [feld.regexPattern],
@@ -383,16 +401,6 @@ export class FormEditorComponent implements OnInit, OnDestroy {
         control.get('anzeigeReihenfolge')?.setValue(i);
       });
     }
-  }
-
-  getOAuthMappingLabel(value: string): string {
-    const option = this.oauthMappingOptions.find(opt => opt.value === value);
-    return option ? option.label : '';
-  }
-
-  getOAuthMappingDescription(value: string): string {
-    const option = this.oauthMappingOptions.find(opt => opt.value === value);
-    return option ? option.description : '';
   }
 
   // Status-Änderungen (Buttons in der Mitte)
@@ -454,7 +462,6 @@ export class FormEditorComponent implements OnInit, OnDestroy {
           defaultValue: feld.defaultValue,
           pflichtfeld: feld.pflichtfeld,
           oauthAutoFill: feld.oauthAutoFill,
-          oauthFieldMapping: feld.oauthFieldMapping,
           minLength: feld.minLength,
           maxLength: feld.maxLength,
           regexPattern: feld.regexPattern,
@@ -581,43 +588,44 @@ export class FormEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Hilfsfunktion für UI
-  getFieldIcon(feldTyp: FeldTyp): string {
-    const fieldType = this.availableFieldTypes.find(ft => ft.type === feldTyp);
-    return fieldType?.icon || 'text_fields';
-  }
-
   showOAuthInfo(feld: AbstractControl): boolean {
-    return feld.get('oauthAutoFill')?.value && feld.get('oauthFieldMapping')?.value;
+    return feld.get('oauthAutoFill')?.value;
   }
 
   // NEUE METHODEN FÜR ERWEITERTE KONFIGURATION
-
-  // Für SELECT-Felder: Optionen verwalten
-  getOptionenArray(fieldIndex: number): FormArray {
-    const field = this.felder.at(fieldIndex);
-    return field.get('optionen') as FormArray;
-  }
-
   addOption(fieldIndex: number): void {
-    const optionenArray = this.getOptionenArray(fieldIndex);
-    optionenArray.push(this.fb.control(`Option ${optionenArray.length + 1}`));
+    const field = this.felder.at(fieldIndex);
+    const currentOptions = field.get('optionen')?.value || [];
+    const newOptions = [...currentOptions, `Option ${currentOptions.length + 1}`];
+    field.get('optionen')?.setValue(newOptions);
   }
 
   removeOption(fieldIndex: number, optionIndex: number): void {
-    const optionenArray = this.getOptionenArray(fieldIndex);
-    if (optionenArray.length > 1) {
-      optionenArray.removeAt(optionIndex);
-    } else {
-      this.errorMessage = 'Ein SELECT-Feld muss mindestens eine Option haben!';
+    const field = this.felder.at(fieldIndex);
+    const currentOptions = [...(field.get('optionen')?.value || [])];
+
+    if (currentOptions.length > 1) {
+      currentOptions.splice(optionIndex, 1);
+      field.get('optionen')?.setValue(currentOptions);
     }
   }
 
-  updateOption(fieldIndex: number, optionIndex: number, value: string): void {
-    const optionenArray = this.getOptionenArray(fieldIndex);
-    optionenArray.at(optionIndex).setValue(value);
-  }
+  onOptionInput(fieldIndex: number, optionIndex: number, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
 
+    // Direktes Update des Arrays
+    const field = this.felder.at(fieldIndex);
+    const currentOptions = [...(field.get('optionen')?.value || [])];
+
+    if (optionIndex >= 0 && optionIndex < currentOptions.length) {
+      currentOptions[optionIndex] = value;
+      field.get('optionen')?.setValue(currentOptions, { emitEvent: true });
+    }
+  }
+  trackByIndex(index: number, item: any): number {
+    return index;
+  }
   // Für CHECKBOX-Felder: Labels aktualisieren
   updateCheckboxLabel(fieldIndex: number, which: 'true' | 'false', value: string): void {
     const field = this.felder.at(fieldIndex);
@@ -645,17 +653,6 @@ export class FormEditorComponent implements OnInit, OnDestroy {
     this.showPreviewModal = false;
   }
 
-  // Validierungshinweise anzeigen
-  showValidationHints(feld: AbstractControl): boolean {
-    return !!(
-      feld.get('minLength')?.value ||
-      feld.get('maxLength')?.value ||
-      feld.get('minValue')?.value ||
-      feld.get('maxValue')?.value ||
-      feld.get('regexPattern')?.value
-    );
-  }
-
   // LOCAL STORAGE AUTOSAVE
   private saveToLocalStorage(): void {
     const saveData = {
@@ -669,18 +666,22 @@ export class FormEditorComponent implements OnInit, OnDestroy {
   }
 
   private loadFromLocalStorage(): void {
-    if (this.isEditMode) return; // Nicht laden im Edit-Modus
+    // NUR laden wenn wir im Edit-Modus sind
+    if (!this.isEditMode) {
+      console.log('Neues Formular: Kein Autosave laden');
+      return;
+    }
 
     const savedData = localStorage.getItem(this.localStorageKey);
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
 
-        if (parsed.formData) {
+        if (parsed.formData && this.isEditMode) {
           this.formularForm.patchValue(parsed.formData);
         }
 
-        if (parsed.fields && this.felder.length === 0) {
+        if (parsed.fields && this.felder.length === 0 && this.isEditMode) {
           parsed.fields.forEach((field: any) => {
             const feldGroup = this.fb.group({
               feldTyp: [field.feldTyp || 'TEXT'],
@@ -690,11 +691,10 @@ export class FormEditorComponent implements OnInit, OnDestroy {
               defaultValue: [field.defaultValue || ''],
               pflichtfeld: [field.pflichtfeld || false],
               oauthAutoFill: [field.oauthAutoFill || false],
-              oauthFieldMapping: [field.oauthFieldMapping || ''],
               minLength: [field.minLength || null],
               maxLength: [field.maxLength || null],
               regexPattern: [field.regexPattern || ''],
-              reihenfolge: [field.reihenfolge || this.felder.length],
+              anzeigeReihenfolge: [field.anzeigeReihenfolge || this.felder.length],
               optionen: this.fb.array(field.optionen || ['Option 1', 'Option 2']),
               checkboxLabelTrue: [field.checkboxLabelTrue || 'Ja'],
               checkboxLabelFalse: [field.checkboxLabelFalse || 'Nein'],

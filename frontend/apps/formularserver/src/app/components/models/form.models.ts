@@ -18,7 +18,6 @@ export interface FormularFeld {
   defaultValue?: string;
   pflichtfeld: boolean;
   oauthAutoFill?: boolean;
-  oauthFieldMapping?: string;
   minLength?: number;
   maxLength?: number;
   regexPattern?: string;
@@ -48,4 +47,21 @@ export enum FeldTyp {
   TEXTAREA = 'TEXTAREA',
   CHECKBOX = 'CHECKBOX',
   FILE_UPLOAD = 'FILE_UPLOAD'
+}
+
+export interface BackendUser {
+  id: number;
+  name: string;
+  email: string;
+  auth0Id?: string;
+  firma?: string;
+  rolle: UserRolle;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export enum UserRolle {
+  ANTRAGSTELLER = 'ANTRAGSTELLER',
+  SACHBEARBEITER = 'SACHBEARBEITER',
+  ADMIN = 'ADMIN'
 }

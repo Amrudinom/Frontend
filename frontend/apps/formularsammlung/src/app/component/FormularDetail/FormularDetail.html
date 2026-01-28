@@ -52,8 +52,8 @@
               type="number"
               [formControlName]="feld.feldName"
               [placeholder]="feld.placeholder || ''"
-              [min]="feld.minValue || null"
-              [max]="feld.maxValue || null"
+              [min]="feld.minValue || 0"
+              [max]="feld.maxValue || 0"
               class="form-control"
             />
           }
@@ -90,6 +90,14 @@
                 <option [value]="option">{{ option }}</option>
               }
             </select>
+          }
+
+          @if (feld.feldTyp === 'DATEI_UPLOAD') {
+            <input
+              type="file"
+              [formControlName]="feld.feldName"
+              class="form-control"
+            />
           }
         </div>
       }

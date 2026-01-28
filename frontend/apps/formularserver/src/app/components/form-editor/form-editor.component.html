@@ -8,7 +8,7 @@
 <body>
 <div class="form-editor-container">
   <button routerLink="/form-builder" class="btn btn-secondary">
-      Zurück zur Übersicht
+    Zurück zur Übersicht
   </button>
   <!-- Header -->
   <div class="header">
@@ -78,9 +78,13 @@
         <h4><i class="fas fa-user-shield"></i> OAuth-Felder</h4>
         <p class="text-muted">Diese Felder können automatisch aus Login-Daten befüllt werden:</p>
         <ul class="oauth-list">
-          <li *ngFor="let option of oauthMappingOptions">
-            <strong>{{ option.label }}</strong>
-            <small>{{ option.description }}</small>
+          <li>
+            <strong>Email-Felder</strong>
+            <small>Automatisch mit der E-Mail des angemeldeten Benutzers</small>
+          </li>
+          <li>
+            <strong>Text-Felder</strong>
+            <small>Automatisch mit dem Namen des angemeldeten Benutzers</small>
           </li>
         </ul>
       </div>
@@ -275,26 +279,14 @@
                              (change)="updateFieldValue(i, 'oauthAutoFill', $any($event.target).checked)">
                       <label [for]="'oauthAutoFill_' + i" class="checkbox-label">
                         <i class="fas fa-user-check"></i>
-                        Automatisch aus Login-Daten befüllen
+                        <span *ngIf="feld.get('feldTyp')?.value === FeldTyp.EMAIL">
+                            Automatisch mit Benutzer-E-Mail befüllen
+                        </span>
+                        <span *ngIf="feld.get('feldTyp')?.value === FeldTyp.TEXT">
+                            Automatisch mit Benutzer-Name befüllen
+                        </span>
                       </label>
                     </div>
-                  </div>
-
-                  <!-- OAuth Mapping (wenn OAuth aktiviert) -->
-                  <div class="form-group" *ngIf="feld.get('oauthAutoFill')?.value">
-                    <label>OAuth-Feld-Mapping</label>
-                    <select class="form-control"
-                            [value]="feld.get('oauthFieldMapping')?.value || ''"
-                            (change)="updateFieldValue(i, 'oauthFieldMapping', $any($event.target).value)">
-                      <option value="">Keine automatische Befüllung</option>
-                      <option *ngFor="let option of oauthMappingOptions"
-                              [value]="option.value">
-                        {{ option.label }}
-                      </option>
-                    </select>
-                    <small class="form-text" *ngIf="feld.get('oauthFieldMapping')?.value">
-                      {{ getOAuthMappingDescription(feld.get('oauthFieldMapping')?.value) }}
-                    </small>
                   </div>
                 </div>
 
@@ -302,25 +294,23 @@
                 <div class="feld-spezial-konfig" *ngIf="feld.get('feldTyp')?.value === FeldTyp.SELECT">
                   <h5><i class="fas fa-list-ul"></i> Auswahl-Optionen konfigurieren</h5>
 
-                  <div *ngIf="feld.get('optionen') else keineOptionen">
-                    <div class="options-list">
-                      <div *ngFor="let option of feld.get('optionen')?.value; let optionIndex = index"
-                           class="option-item">
-                        <input type="text"
-                               class="form-control option-input"
-                               [value]="option"
-                               (input)="updateOption(i, optionIndex, $any($event.target).value)"
-                               placeholder="Optionstext">
-                        <button type="button"
-                                class="btn btn-danger btn-sm option-remove"
-                                (click)="removeOption(i, optionIndex)"
-                                title="Option entfernen">
-                          <i class="fas fa-times"></i>
-                        </button>
-                      </div>
+                  <div class="options-list" *ngIf="feld.get('optionen') else keineOptionen">
+                    <div *ngFor="let option of feld.get('optionen')?.value; let optionIndex = index; trackBy: trackByIndex"
+                         class="option-item">
+
+                      <input type="text"
+                             class="form-control option-input"
+                             [value]="option"
+                             (input)="onOptionInput(i, optionIndex, $event)"
+                             placeholder="Optionstext">
+
+                      <button type="button"
+                              class="btn btn-danger btn-sm option-remove"
+                              (click)="removeOption(i, optionIndex)">
+                        <i class="fas fa-times"></i>
+                      </button>
                     </div>
                   </div>
-
                   <ng-template #keineOptionen>
                     <p class="text-muted">Noch keine Optionen definiert</p>
                   </ng-template>
@@ -546,7 +536,12 @@
             <!-- OAuth Hinweis -->
             <div class="oauth-preview-hint" *ngIf="showOAuthInfo(feld)">
               <i class="fas fa-user-check"></i>
-              Wird automatisch mit {{ getOAuthMappingLabel(feld.get('oauthFieldMapping')?.value) }} befüllt
+              <span *ngIf="feld.get('feldTyp')?.value === FeldTyp.EMAIL">
+                Wird automatisch mit Ihrer E-Mail-Adresse befüllt
+              </span>
+              <span *ngIf="feld.get('feldTyp')?.value === FeldTyp.TEXT">
+                Wird automatisch mit Ihrem Namen befüllt
+              </span>
             </div>
 
             <label class="preview-label">
