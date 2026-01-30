@@ -15,7 +15,7 @@ import { AuthService } from '@auth0/auth0-angular';
           @if (auth.isAuthenticated$ | async) {
             <div class="auth-section">
               <span>Willkommen, {{ (auth.user$ | async)?.name }}!</span>
-              <button (click)="auth.logout()">Logout</button>
+              <button (click)="logout()">Logout</button>
             </div>
           } @else {
             <button (click)="login()">Login</button>
